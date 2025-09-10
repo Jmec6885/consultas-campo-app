@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Consultas Campo</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>const { createClient } = supabase;</script>
     <style>
         * {
             margin: 0;
@@ -304,8 +305,8 @@
         const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg';
         
-        // Initialize Supabase (will be replaced with environment variables in production)
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Initialize supabaseClient. (will be replaced with environment variables in production)
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null;
         let consultasData = [];
@@ -321,7 +322,7 @@
             }
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient.
                     .from('usuarios')
                     .select('*')
                     .eq('usuario', username)
@@ -346,7 +347,7 @@
                 document.getElementById('searchSection').style.display = 'block';
                 
                 // Update last connection
-                await supabase
+                await supabaseClient.
                     .from('usuarios')
                     .update({ ultima_conexion: new Date().toISOString() })
                     .eq('id', data.id);
@@ -373,10 +374,10 @@
             document.getElementById('searchResults').innerHTML = '';
         }
 
-        // Load data from Supabase
+        // Load data from supabaseClient.
         async function cargarDatos() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient.
                     .from('consultas_servicios')
                     .select('*');
 
@@ -513,8 +514,8 @@
                 // In a real implementation, you would parse Excel/CSV files here
                 alert(`Procesando ${files.length} archivo(s)... (Función en desarrollo)`);
                 
-                // Example of how to add data to Supabase:
-                // const { data, error } = await supabase
+                // Example of how to add data to supabaseClient.:
+                // const { data, error } = await supabaseClient.
                 //     .from('consultas_servicios')
                 //     .insert([...parsedData]);
 
@@ -530,7 +531,7 @@
             }
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient.
                     .from('consultas_servicios')
                     .delete()
                     .neq('id', 0); // Delete all records
