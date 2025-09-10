@@ -407,15 +407,15 @@
             let resultados = consultasData.filter(item => {
                 let match = false;
                 
-                if (cuenta && item.cuenta_contrato && item.cuenta_contrato.includes(cuenta)) {
+                if (cuenta && item.CuentaContrato && item.CuentaContrato.toString().includes(cuenta)) {
                     match = true;
                 }
                 
-                if (medidor && item.medidor && item.medidor.includes(medidor)) {
+                if (medidor && item.Medidor && item.Medidor.toString().includes(medidor)) {
                     match = true;
                 }
                 
-                if (nombre && item.nombre_cliente && item.nombre_cliente.toLowerCase().includes(nombre)) {
+                if (nombre && item.NombreCliente && item.NombreCliente.toLowerCase().includes(nombre)) {
                     match = true;
                 }
                 
@@ -447,26 +447,26 @@
                         <div class="result-header">Resultado ${index + 1}</div>
                         
                         <div class="result-item">
-                            <span class="result-label">Cuenta/Contrato:</span> ${item.cuenta_contrato || 'N/A'}
+                            <span class="result-label">Cuenta/Contrato:</span> ${item.CuentaContrato || 'N/A'}
                         </div>
                         
                         <div class="result-item">
-                            <span class="result-label">Medidor:</span> ${item.medidor || 'N/A'}
+                            <span class="result-label">Medidor:</span> ${item.Medidor || 'N/A'}
                         </div>
                         
                         <div class="result-item">
-                            <span class="result-label">Cliente:</span> ${item.nombre_cliente || 'N/A'}
+                            <span class="result-label">Cliente:</span> ${item.NombreCliente || 'N/A'}
                         </div>
                         
                         <div class="result-item">
-                            <span class="result-label">Comentario:</span> ${item.comentario_general || 'Sin comentarios'}
+                            <span class="result-label">Comentario:</span> ${item.ComentarioGeneral || 'Sin comentarios'}
                         </div>
                         
                         <div class="action-buttons">
-                            ${item.coordenadas ? `<button class="btn btn-secondary" onclick="abrirCoordenadas('${item.coordenadas}')">📍 Ver Ubicación</button>` : ''}
-                            ${item.coordenadas_gis ? `<button class="btn btn-secondary" onclick="abrirCoordenadas('${item.coordenadas_gis}')">🗺️ Ver GIS</button>` : ''}
-                            ${item.foto_link ? `<button class="btn btn-secondary" onclick="verFoto('${item.foto_link}')">📸 Ver Foto</button>` : ''}
-                            <button class="btn btn-secondary" onclick="verGrafica(${index})">📊 Ver Gráfica</button>
+                            ${item.Coordenadas ? `<button class="btn btn-secondary" onclick="abrirCoordenadas('${item.Coordenadas}')">📍 Ver Ubicación</button>` : ''}
+                            ${item.Coordenadasgis ? `<button class="btn btn-secondary" onclick="abrirCoordenadas('${item.Coordenadasgis}')">🗺️ Ver GIS</button>` : ''}
+                            ${item.FotoLink ? `<button class="btn btn-secondary" onclick="verFoto('${item.FotoLink}')">📸 Ver Foto</button>` : ''}
+                            ${item.Grafica ? `<button class="btn btn-secondary" onclick="verGrafica('${item.Grafica}', ${index})">📊 Ver Gráfica</button>` : '<button class="btn btn-secondary" onclick="verGrafica(null, '+index+')">📊 Ver Gráfica</button>'}
                         </div>
                     </div>
                 `;
@@ -490,9 +490,13 @@
             }
         }
 
-        // View graphic (placeholder)
-        function verGrafica(index) {
-            alert('Función de gráficas en desarrollo. Se mostrará el historial de lecturas y consumos.');
+        // View graphic
+        function verGrafica(graficaLink, index) {
+            if (graficaLink) {
+                window.open(graficaLink, '_blank');
+            } else {
+                alert('Función de gráficas en desarrollo. Se mostrará el historial de lecturas y consumos.');
+            }
         }
 
         // Admin functions
