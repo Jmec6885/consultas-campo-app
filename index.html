@@ -321,7 +321,7 @@
             }
 
             try {
-                const { data, error } = await supabaseClient.
+                const { data, error } = await supabaseClient
                     .from('usuarios')
                     .select('*')
                     .eq('usuario', username)
@@ -346,7 +346,7 @@
                 document.getElementById('searchSection').style.display = 'block';
                 
                 // Update last connection
-                await supabaseClient.
+                await supabaseClient
                     .from('usuarios')
                     .update({ ultima_conexion: new Date().toISOString() })
                     .eq('id', data.id);
@@ -373,10 +373,10 @@
             document.getElementById('searchResults').innerHTML = '';
         }
 
-        // Load data from supabaseClient.
+        // Load data from supabaseClient
         async function cargarDatos() {
             try {
-                const { data, error } = await supabaseClient.
+                const { data, error } = await supabaseClient
                     .from('consultas_servicios')
                     .select('*');
 
@@ -530,7 +530,7 @@
             }
 
             try {
-                const { error } = await supabaseClient.
+                const { error } = await supabaseClient
                     .from('consultas_servicios')
                     .delete()
                     .neq('id', 0); // Delete all records
