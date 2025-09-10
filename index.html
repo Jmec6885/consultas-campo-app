@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Consultas Campo</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>const { createClient } = supabase;</script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -306,7 +305,7 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg';
         
         // Initialize supabaseClient. (will be replaced with environment variables in production)
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null;
         let consultasData = [];
