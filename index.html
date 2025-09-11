@@ -304,7 +304,10 @@
             <div class="login-form">
                 <div class="form-group">
                     <label for="username">Usuario:</label>
-                    <input type="text" id="username" placeholder="Ingrese su usuario">
+                    <input type="text" id="username" placeholder="Ingrese su usuario" value="admin">
+                    <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                        Usuarios de prueba: admin/admin123, usuario/user123, campo/campo123
+                    </small>
                 </div>
                 
                 <div class="form-group">
@@ -639,8 +642,9 @@
             // Parsear los datos
             const datos = parsearDatosGrafica(graficaData);
             
+            // Si no hay datos válidos, mostrar mensaje y datos de ejemplo
             if (datos.meses.length === 0) {
-                // Si no hay datos, mostrar gráficas de ejemplo
+                console.log('No se encontraron datos de gráfica válidos, usando datos de ejemplo');
                 datos.meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
                 datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
                 datos.consumos = [0, 150, 130, 140, 160, 170];
