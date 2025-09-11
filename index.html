@@ -633,140 +633,167 @@
 
         // View graphics
         function verGraficas(graficaData, nombreCliente, cuentaContrato) {
-            const modal = document.getElementById('chartsModal');
-            const modalTitle = document.getElementById('modalTitle');
-            
-            modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
-            modal.style.display = 'block';
+            try {
+                const modal = document.getElementById('chartsModal');
+                const modalTitle = document.getElementById('modalTitle');
+                
+                modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
+                modal.style.display = 'block';
 
-            // Parsear los datos
-            const datos = parsearDatosGrafica(graficaData);
-            
-            // Si no hay datos válidos, mostrar mensaje y datos de ejemplo
-            if (datos.meses.length === 0) {
-                console.log('No se encontraron datos de gráfica válidos, usando datos de ejemplo');
-                datos.meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
-                datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
-                datos.consumos = [0, 150, 130, 140, 160, 170];
-            }
+                console.log('🔍 Datos originales de gráfica:', graficaData);
 
-            // Destruir gráficas existentes si las hay
-            if (consumosChart) {
-                consumosChart.destroy();
-            }
-            if (lecturasChart) {
-                lecturasChart.destroy();
-            }
-
-            // Crear gráfica de consumos (barras)
-            const ctxConsumos = document.getElementById('consumosChart').getContext('2d');
-            consumosChart = new Chart(ctxConsumos, {
-                type: 'bar',
-                data: {
-                    labels: datos.meses,
-                    datasets: [{
-                        label: 'Consumo (kWh)',
-                        data: datos.consumos,
-                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 2,
-                        borderRadius: 5,
-                        borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y} kWh`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Consumo (kWh)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Mes'
-                            }
-                        }
-                    }
+                // Parsear los datos
+                const datos = parsearDatosGrafica(graficaData);
+                
+                // Si no hay datos válidos, mostrar mensaje y datos de ejemplo
+                if (datos.meses.length === 0) {
+                    console.log('⚠️ No se encontraron datos de gráfica válidos, usando datos de ejemplo');
+                    datos.meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+                    datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
+                    datos.consumos = [0, 150, 130, 140, 160, 170];
                 }
-            });
 
-            // Crear gráfica de lecturas (líneas)
-            const ctxLecturas = document.getElementById('lecturasChart').getContext('2d');
-            lecturasChart = new Chart(ctxLecturas, {
-                type: 'line',
-                data: {
-                    labels: datos.meses,
-                    datasets: [{
-                        label: 'Lectura Acumulada',
-                        data: datos.lecturas,
-                        borderColor: 'rgba(118, 75, 162, 1)',
-                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: 'rgba(118, 75, 162, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
+                // Destruir gráficas existentes si las hay
+                if (consumosChart) {
+                    consumosChart.destroy();
+                }
+                if (lecturasChart) {
+                    lecturasChart.destroy();
+                }
+
+                // Crear gráficas con un pequeño delay para asegurar que el DOM esté listo
+                setTimeout(() => {
+                    crearGraficas(datos);
+                }, 100);
+
+            } catch (error) {
+                console.error('❌ Error mostrando gráficas:', error);
+                alert('Error mostrando las gráficas. Por favor intente de nuevo.');
+            }
+        }
+
+        // Función separada para crear las gráficas
+        function crearGraficas(datos) {
+            try {
+                // Crear gráfica de consumos (barras)
+                const ctxConsumos = document.getElementById('consumosChart');
+                if (ctxConsumos) {
+                    consumosChart = new Chart(ctxConsumos, {
+                        type: 'bar',
+                        data: {
+                            labels: datos.meses,
+                            datasets: [{
+                                label: 'Consumo (kWh)',
+                                data: datos.consumos,
+                                backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                                borderColor: 'rgba(102, 126, 234, 1)',
+                                borderWidth: 2,
+                                borderRadius: 5,
+                                borderSkipped: false,
+                            }]
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} kWh`;
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.parsed.y} kWh`;
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Lectura Acumulada (kWh)'
                             },
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toLocaleString();
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Consumo (kWh)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Mes'
+                                    }
                                 }
                             }
+                        }
+                    });
+                }
+
+                // Crear gráfica de lecturas (líneas)
+                const ctxLecturas = document.getElementById('lecturasChart');
+                if (ctxLecturas) {
+                    lecturasChart = new Chart(ctxLecturas, {
+                        type: 'line',
+                        data: {
+                            labels: datos.meses,
+                            datasets: [{
+                                label: 'Lectura Acumulada',
+                                data: datos.lecturas,
+                                borderColor: 'rgba(118, 75, 162, 1)',
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 6,
+                                pointHoverRadius: 8
+                            }]
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Mes'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} kWh`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    title: {
+                                        display: true,
+                                        text: 'Lectura Acumulada (kWh)'
+                                    },
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value.toLocaleString();
+                                        }
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Mes'
+                                    }
+                                }
                             }
                         }
-                    }
+                    });
                 }
-            });
+
+                console.log('✅ Gráficas creadas exitosamente');
+
+            } catch (error) {
+                console.error('❌ Error creando gráficas:', error);
+            }
         }
 
         // Cerrar modal de gráficas
