@@ -757,9 +757,25 @@
             }, 30000); // 30 segundos
         }
 
-        function logout() {
-            console.log('Cerrando sesión...');
-            
+        async function logout() {
+            if (currentUser) {
+                try {
+                    // Marcar sesión como inactiva (nombres sin guiones bajos)
+                    const { error } = await supabaseClient
+                        .from('usuarios')
+                        .update({ sessionactiva: false, sessiontoken: null })
+                        .eq('id', currentUser.id);
+                    
+                    if (error) {
+                        console.warn('Error cerrando sesión en BD:', error);
+                    } else {
+                        console.log('Sesión cerrada correctamente en la base de datos');
+                    }
+                } catch (err) {
+                    console.warn('Error cerrando sesión:', err);
+                }
+            }
+
             currentUser = null;
             selectedTable = null;
             
@@ -775,7 +791,7 @@
             document.getElementById('password').value = '';
             document.getElementById('searchResults').innerHTML = '';
             
-            console.log('Sesión cerrada correctamente');
+            console.log('Usuario desconectado correctamente');
         }
 
         function seleccionarTabla(tableName) {
@@ -1240,6 +1256,7 @@
     </script>
 </body>
 </html>
+
 
 
 
