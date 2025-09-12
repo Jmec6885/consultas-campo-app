@@ -89,20 +89,19 @@
                     <div class="form-group search-container">
                         <label for="searchCuenta">Buscar por Cuenta/Contrato:</label>
                         <input type="text" id="searchCuenta" placeholder="Ingrese número de cuenta">
-                        <div class="suggestions hidden" id="suggestionsCuenta"></div>
+                        <button class="btn btn-secondary" onclick="buscar('cuenta')">🔍 Buscar por Cuenta</button>
                     </div>
                     <div class="form-group search-container">
                         <label for="searchMedidor">Buscar por Medidor:</label>
                         <input type="text" id="searchMedidor" placeholder="Ingrese número de medidor">
-                        <div class="suggestions hidden" id="suggestionsMedidor"></div>
+                        <button class="btn btn-secondary" onclick="buscar('medidor')">🔍 Buscar por Medidor</button>
                     </div>
                     <div class="form-group search-container">
                         <label for="searchNombre">Buscar por Nombre:</label>
                         <input type="text" id="searchNombre" placeholder="Ingrese nombre del cliente">
-                        <div class="suggestions hidden" id="suggestionsNombre"></div>
+                        <button class="btn btn-secondary" onclick="buscar('nombre')">🔍 Buscar por Nombre</button>
                     </div>
                 </div>
-                <button class="btn" onclick="buscarInformacion()">🔍 Buscar</button>
                 <div id="searchResults"></div>
             </div>
         </div>
@@ -149,8 +148,6 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentUser = null;
-        // Ya no necesitamos almacenar todos los datos en una variable local
-        // let consultasData = [];
 
         async function login() {
             const username = document.getElementById('username').value.trim();
@@ -199,57 +196,62 @@
             document.getElementById('searchResults').innerHTML = '';
         }
 
-        // Función de búsqueda mejorada para usar la API de Supabase directamente
-        async function buscarInformacion() {
-    const cuenta = document.getElementById('searchCuenta').value.trim();
-    const medidor = document.getElementById('searchMedidor').value.trim();
-    const nombre = document.getElementById('searchNombre').value.trim();
-    
-    if (!cuenta && !medidor && !nombre) {
-        alert('Por favor ingrese al menos un criterio de búsqueda');
-        return;
-    }
-    
-    let query = supabaseClient.from('consultas_servicios').select('*');
-    
-    const condiciones = [];
-    
-    // Si hay una cuenta, la tratamos como número para búsqueda exacta
-    if (cuenta) {
-        condiciones.push(`"CuentaContrato".eq.${cuenta}`);
-    }
-    
-    // Si hay un medidor, la tratamos como número para búsqueda exacta
-    if (medidor) {
-        condiciones.push(`"Medidor".eq.${medidor}`);
-    }
-    
-    // Si hay un nombre, la tratamos como texto para búsqueda parcial
-    if (nombre) {
-        condiciones.push(`"NombreCliente".ilike.%${nombre}%`);
-    }
-    
-    // Aplicar el filtro si hay al menos una condición
-    if (condiciones.length > 0) {
-        query = query.or(condiciones.join(','));
-    }
+        async function buscar(criterio) {
+            const cuenta = document.getElementById('searchCuenta').value.trim();
+            const medidor = document.getElementById('searchMedidor').value.trim();
+            const nombre = document.getElementById('searchNombre').value.trim();
 
-    try {
-        const { data, error } = await query;
-        
-        if (error) {
-            console.error('Error en la búsqueda:', error.message);
-            alert(`Ocurrió un error al buscar la información: ${error.message}`);
-            return;
+            let columna = '';
+            let valor = '';
+            let isExact = false;
+
+            // Determina la columna y el valor según el botón presionado
+            if (criterio === 'cuenta') {
+                if (!cuenta) { alert('Por favor ingrese un número de cuenta'); return; }
+                columna = 'CuentaContrato';
+                valor = cuenta;
+                isExact = true;
+            } else if (criterio === 'medidor') {
+                if (!medidor) { alert('Por favor ingrese un número de medidor'); return; }
+                columna = 'Medidor';
+                valor = medidor;
+                isExact = true;
+            } else if (criterio === 'nombre') {
+                if (!nombre) { alert('Por favor ingrese un nombre'); return; }
+                columna = 'NombreCliente';
+                valor = nombre;
+            }
+
+            try {
+                let query;
+                if (isExact) {
+                    query = supabaseClient
+                        .from('consultas_servicios')
+                        .select('*')
+                        .eq(columna, valor);
+                } else {
+                    query = supabaseClient
+                        .from('consultas_servicios')
+                        .select('*')
+                        .ilike(columna, `%${valor}%`);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('Error en la búsqueda:', error.message);
+                    alert(`Ocurrió un error al buscar la información: ${error.message}`);
+                    return;
+                }
+                
+                mostrarResultados(data || []);
+                
+            } catch (err) {
+                console.error('Error en la búsqueda (catch):', err);
+                alert('Ocurrió un error al buscar la información. Por favor, intente de nuevo.');
+            }
         }
-        
-        mostrarResultados(data || []);
-        
-    } catch (err) {
-        console.error('Error en la búsqueda (catch):', err);
-        alert('Ocurrió un error al buscar la información. Por favor, intente de nuevo.');
-    }
-}
+
         function mostrarResultados(resultados) {
             const container = document.getElementById('searchResults');
             if (resultados.length === 0) {
@@ -283,8 +285,8 @@
                             ${item.Coordenadasgis ? `<button class="btn btn-secondary" onclick="abrirCoordenadas('${item.Coordenadasgis}')">🗺️ Ver GIS</button>` : ''}
                             ${item.FotoLink ? `<button class="btn btn-secondary" onclick="verFoto('${item.FotoLink}')">📸 Ver Foto</button>` : ''}
                             <button class="btn btn-secondary" onclick="verGraficas(
-                                \`${item.Grafica || ''}\`, 
-                                \`${item.NombreCliente || 'Cliente'}\`, 
+                                \`${item.Grafica || ''}\`,
+                                \`${item.NombreCliente || 'Cliente'}\`,
                                 \`${item.CuentaContrato || 'N/A'}\`
                             )">📊 Ver Gráficas</button>
                         </div>
@@ -296,7 +298,7 @@
 
         function abrirCoordenadas(coordenadas) {
             if (coordenadas) {
-                const url = `https://www.google.com/maps?q=$${coordenadas}`;
+                const url = `https://www.google.com/maps?q=$$${coordenadas}`;
                 window.open(url, '_blank');
             }
         }
@@ -333,7 +335,6 @@
         let consumosChart = null;
         let lecturasChart = null;
         
-        // Ahora `verGraficas` recibe los datos directamente del HTML generado
         function verGraficas(graficaData, nombreCliente, cuentaContrato) {
             try {
                 const modal = document.getElementById('chartsModal');
@@ -342,7 +343,6 @@
                 modal.style.display = 'block';
                 const datos = parsearDatosGrafica(graficaData);
                 if (datos.meses.length === 0) {
-                    // Datos de ejemplo si no hay información válida
                     datos.meses = ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.'];
                     datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
                     datos.consumos = [0, 150, 130, 140, 160, 170];
@@ -360,7 +360,6 @@
             try {
                 const ctxConsumos = document.getElementById('consumosChart');
                 if (ctxConsumos) {
-                    // Instalamos el plugin de datalabels
                     Chart.register(ChartDataLabels);
                     consumosChart = new Chart(ctxConsumos, {
                         type: 'bar',
@@ -388,7 +387,6 @@
                                         }
                                     }
                                 },
-                                // Configuración para ChartDataLabels
                                 datalabels: {
                                     anchor: 'end',
                                     align: 'top',
@@ -440,7 +438,6 @@
                                         }
                                     }
                                 },
-                                // Configuración para ChartDataLabels
                                 datalabels: {
                                     anchor: 'end',
                                     align: 'top',
@@ -508,11 +505,7 @@
             }
         }
         
-        // No se necesita el autocompletado en este momento ya que se busca en la base de datos
-        // function setupAutoComplete() {}
-        
         document.addEventListener('DOMContentLoaded', function() {
-            // setupAutoComplete(); // Ya no es necesario
             document.getElementById('password').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') login();
             });
