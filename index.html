@@ -791,6 +791,11 @@
       document.getElementById('searchResults').innerHTML = '';
     }
 
+    function mostrarCargaMasiva() {
+      document.getElementById('tableSelectionSection').style.display = 'none';
+      document.getElementById('adminSection').style.display = 'block';
+    }
+
     function seleccionarTabla(tableName) {
       selectedTable = tableName;
       const config = tableConfigs[tableName];
@@ -937,6 +942,7 @@
   </script>
 </body>
 </html>
+
 
 
 
