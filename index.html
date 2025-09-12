@@ -741,11 +741,8 @@
                 if (!currentUser) return;
 
                 try {
-                    const { data } = await supabaseClient
-                        .from('usuarios')
-                        .select('sessionactiva, sessiontoken')
-                        .eq('id', currentUser.id)
-                        .single();
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: username, password });
+
 
                     if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.sessiontoken) {
                         alert('Su sesión ha expirado o ha sido iniciada desde otro dispositivo.');
@@ -1255,6 +1252,7 @@
     </script>
 </body>
 </html>
+
 
 
 
