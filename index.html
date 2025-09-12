@@ -882,7 +882,7 @@ if (data.rol === 'administrador') {
           if (!val) return;
           if (action.includes('Coordenadas')) html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
           if (action === 'FotoLink' || action === 'Fotolink') html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-          if (action === 'consumos') html += `<button class="btn btn-secondary" onclick="verGraficas('${val}', 'Consumos', '${item.cuentacontrato}')">📊 Ver Consumos</button>`;
+          if (action === 'Grafica') html += `<button class="btn btn-secondary" onclick="verGraficas('${val}', 'Grafica', '${item.cuentacontrato}')">📊 Ver Consumos</button>`;
         });
         html += '</div></div>';
       });
@@ -890,10 +890,10 @@ if (data.rol === 'administrador') {
     }
 
     function abrirCoordenadas(coordenadas) {
-      if (coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
+      if (Coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
     }
 
-    function verFoto(link) {
+    function verFotoLink(link) {
       if (link) window.open(link, '_blank');
     }
 
@@ -956,6 +956,7 @@ if (data.rol === 'administrador') {
   </script>
 </body>
 </html>
+
 
 
 
