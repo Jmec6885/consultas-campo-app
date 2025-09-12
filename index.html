@@ -719,21 +719,24 @@
         document.getElementById('tableSelectionSection').style.display = 'block';
 
        // ✅ Mostrar botón "Subir Archivos" solo si es admin
+const selector = document.querySelector('.table-selector');
+const existe = document.getElementById('btnSubirArchivos');
+
+// Siempre eliminar el botón si existe (por si cambia de usuario)
+if (existe) existe.remove();
+
+// Agregar solo si es administrador
 if (data.rol === 'administrador') {
-  const selector = document.querySelector('.table-selector');
-  const existe = document.getElementById('btnSubirArchivos');
-  if (!existe) {
-    const btn = document.createElement('div');
-    btn.id = 'btnSubirArchivos';
-    btn.className = 'table-option';
-    btn.innerHTML = `
-      <span class="table-icon">📤</span>
-      <div class="table-title">Subir Archivos</div>
-      <div class="table-description">Carga masiva de datos Excel</div>
-    `;
-    btn.onclick = mostrarCargaMasiva;
-    selector.appendChild(btn);
-  }
+  const btn = document.createElement('div');
+  btn.id = 'btnSubirArchivos';
+  btn.className = 'table-option';
+  btn.innerHTML = `
+    <span class="table-icon">📤</span>
+    <div class="table-title">Subir Archivos</div>
+    <div class="table-description">Carga masiva de datos Excel</div>
+  `;
+  btn.onclick = mostrarCargaMasiva;
+  selector.appendChild(btn);
 }
 
         iniciarVerificacionSesion();
@@ -960,6 +963,7 @@ if (data.rol === 'administrador') {
   </script>
 </body>
 </html>
+
 
 
 
