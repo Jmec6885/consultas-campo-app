@@ -461,7 +461,7 @@
                     <label for="username">Usuario:</label>
                     <input type="text" id="username" placeholder="Ingrese su usuario" value="admin">
                     <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
-                        Usuarios de prueba: admin/admin123, usuario/user123, campo/campo123
+                      
                     </small>
                 </div>
                 <div class="form-group">
@@ -669,7 +669,7 @@
                     .from('usuarios')
                     .select('*')
                     .eq('usuario', username)
-                    .eq('session_activa', true)
+                    .eq('sessionactiva', true)
                     .single();
 
                 if (existingSession) {
@@ -681,7 +681,7 @@
                     // Cerrar la sesión anterior
                     await supabaseClient
                         .from('usuarios')
-                        .update({ session_activa: false, session_token: null })
+                        .update({ sessionactiva: false, sessiontoken: null })
                         .eq('usuario', username);
                 }
 
@@ -706,9 +706,9 @@
                 await supabaseClient
                     .from('usuarios')
                     .update({ 
-                        session_activa: true, 
-                        session_token: sessionToken,
-                        ultima_conexion: new Date().toISOString() 
+                        sessionactiva: true, 
+                        sessiontoken: sessionToken,
+                        ultimaconexion: new Date().toISOString() 
                     })
                     .eq('id', data.id);
 
@@ -743,11 +743,11 @@
                 try {
                     const { data } = await supabaseClient
                         .from('usuarios')
-                        .select('session_activa, session_token')
+                        .select('sessionactiva, sessiontoken')
                         .eq('id', currentUser.id)
                         .single();
 
-                    if (!data || !data.session_activa || data.session_token !== currentUser.session_token) {
+                    if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.sessiontoken) {
                         alert('Su sesión ha expirado o ha sido iniciada desde otro dispositivo.');
                         logout();
                     }
@@ -1256,6 +1256,7 @@
     </script>
 </body>
 </html>
+
 
 
 
