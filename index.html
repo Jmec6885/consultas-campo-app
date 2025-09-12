@@ -584,6 +584,17 @@
     let selectedTable = null;
 
     const tableConfigs = {
+            'consultas_servicios': {
+                title: 'Consultas de Servicios',
+                icon: '🏠',
+                fields: [
+                    { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
+                    { key: 'Medidor', label: 'Medidor', type: 'exact' },
+                    { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
+                ],
+                resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
+                actions: ['coordenadas', 'coordenadasgis', 'foto', 'grafica']
+            },
       'Consumos': {
         title: 'Consumos',
         icon: '📊',
@@ -917,6 +928,7 @@
   </script>
 </body>
 </html>
+
 
 
 
