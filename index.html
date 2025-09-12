@@ -760,13 +760,19 @@
         async function logout() {
             if (currentUser) {
                 try {
-                    // Marcar sesión como inactiva
-                    await supabaseClient
+                    // Marcar sesión como inactiva solo si tenemos los campos
+                    const { error } = await supabaseClient
                         .from('usuarios')
                         .update({ session_activa: false, session_token: null })
                         .eq('id', currentUser.id);
+                    
+                    if (error) {
+                        console.warn('Error cerrando sesión en BD:', error);
+                    } else {
+                        console.log('Sesión cerrada correctamente en la base de datos');
+                    }
                 } catch (err) {
-                    console.error('Error cerrando sesión:', err);
+                    console.warn('Error cerrando sesión:', err);
                 }
             }
 
@@ -784,6 +790,8 @@
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('searchResults').innerHTML = '';
+            
+            console.log('Usuario desconectado localmente');
         }
 
         function seleccionarTabla(tableName) {
@@ -1248,4 +1256,5 @@
     </script>
 </body>
 </html>
+
 
