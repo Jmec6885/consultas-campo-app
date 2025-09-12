@@ -212,15 +212,19 @@
     
     let query = supabaseClient.from('consultas_servicios').select('*');
     
-    // Lista para almacenar las condiciones que se unirán con el operador 'or'
     const condiciones = [];
     
+    // Si hay una cuenta, la tratamos como número para búsqueda exacta
     if (cuenta) {
-        condiciones.push(`"CuentaContrato".ilike.%${cuenta}%`);
+        condiciones.push(`"CuentaContrato".eq.${cuenta}`);
     }
+    
+    // Si hay un medidor, la tratamos como número para búsqueda exacta
     if (medidor) {
-        condiciones.push(`"Medidor".ilike.%${medidor}%`);
+        condiciones.push(`"Medidor".eq.${medidor}`);
     }
+    
+    // Si hay un nombre, la tratamos como texto para búsqueda parcial
     if (nombre) {
         condiciones.push(`"NombreCliente".ilike.%${nombre}%`);
     }
@@ -235,7 +239,7 @@
         
         if (error) {
             console.error('Error en la búsqueda:', error.message);
-            alert('Ocurrió un error al buscar la información. Por favor, intente de nuevo.');
+            alert(`Ocurrió un error al buscar la información: ${error.message}`);
             return;
         }
         
