@@ -864,17 +864,321 @@
       if (link) window.open(link, '_blank');
     }
 
-    function verGraficas(data, titulo, cuenta) {
-      const modal = document.getElementById('chartsModal');
-      document.getElementById('modalTitle').textContent = `Gráficas - ${titulo} (${cuenta})`;
-      modal.style.display = 'block';
-      // Aquí puedes agregar lógica para graficar si tienes datos
-    }
+    function parsearDatosGrafica(graficaData) {
 
-    function cerrarGraficas() {
-      document.getElementById('chartsModal').style.display = 'none';
-    }
+            if (!graficaData || graficaData.trim() === '') {
 
+                return { meses: [], lecturas: [], consumos: [] };
+
+            }
+
+            const meses = [], lecturas = [], consumos = [];
+
+            const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
+
+            for (const linea of lineas) {
+
+                const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
+
+                if (match) {
+
+                    const [, mes, lectura, consumo] = match;
+
+                    meses.push(mes);
+
+                    lecturas.push(parseInt(lectura));
+
+                    if (consumo !== undefined) {
+
+                        consumos.push(parseInt(consumo));
+
+                    } else if (lecturas.length > 1) {
+
+                        const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
+
+                        consumos.push(Math.max(0, consumoCalculado));
+
+                    } else {
+
+                        consumos.push(0);
+
+                    }
+
+                }
+
+            }
+
+            return { meses, lecturas, consumos };
+
+        }
+
+
+
+        let consumosChart = null;
+
+        let lecturasChart = null;
+
+
+
+        // Nuevo: Mostrar gráficas usando solo índice seguro
+
+        function verGraficasPorIndice(dataIndex) {
+
+            if (dataIndex === undefined || dataIndex < 0 || dataIndex >= consultasData.length) {
+
+                alert('Datos de gráfica no disponibles');
+
+                return;
+
+            }
+
+            const item = consultasData[dataIndex];
+
+            verGraficas(item.Grafica || '', item.NombreCliente || 'Cliente', item.CuentaContrato || 'N/A');
+
+        }
+
+
+
+        function verGraficas(graficaData, nombreCliente, cuentaContrato) {
+
+            try {
+
+                const modal = document.getElementById('chartsModal');
+
+                const modalTitle = document.getElementById('modalTitle');
+
+                modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
+
+                modal.style.display = 'block';
+
+                // Parsear los datos
+
+                const datos = parsearDatosGrafica(graficaData);
+
+                // Si no hay datos válidos, mostrar datos de ejemplo
+
+                if (datos.meses.length === 0) {
+
+                    datos.meses = ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.'];
+
+                    datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
+
+                    datos.consumos = [0, 150, 130, 140, 160, 170];
+
+                }
+
+                if (consumosChart) consumosChart.destroy();
+
+                if (lecturasChart) lecturasChart.destroy();
+
+                setTimeout(() => { crearGraficas(datos); }, 100);
+
+            } catch (error) {
+
+                console.error('❌ Error mostrando gráficas:', error);
+
+                alert('Error mostrando las gráficas. Por favor intente de nuevo.');
+
+            }
+
+        }
+
+
+
+        function crearGraficas(datos) {
+
+            try {
+
+                const ctxConsumos = document.getElementById('consumosChart');
+
+                if (ctxConsumos) {
+
+                    consumosChart = new Chart(ctxConsumos, {
+
+                        type: 'bar',
+
+                        data: {
+
+                            labels: datos.meses,
+
+                            datasets: [{
+
+                                label: 'Consumo (kWh)',
+
+                                data: datos.consumos,
+
+                                backgroundColor: 'rgba(102, 126, 234, 0.8)',
+
+                                borderColor: 'rgba(102, 126, 234, 1)',
+
+                                borderWidth: 2,
+
+                                borderRadius: 5,
+
+                                borderSkipped: false,
+
+                            }]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            plugins: {
+
+                                legend: {display: true,position: 'top'},
+
+                                tooltip: {
+
+                                    callbacks: {
+
+                                        label: function(context) {
+
+                                            return `${context.dataset.label}: ${context.parsed.y} kWh`;
+
+                                        }
+
+                                    }
+
+                                }
+
+                            },
+
+                            scales: {
+
+                                y: {beginAtZero: true,title: {display:true,text:'Consumo (kWh)'}},
+
+                                x: {title: {display:true,text:'Mes'}}
+
+                            }
+
+                        }
+
+                    });
+
+                }
+
+                const ctxLecturas = document.getElementById('lecturasChart');
+
+                if (ctxLecturas) {
+
+                    lecturasChart = new Chart(ctxLecturas, {
+
+                        type: 'line',
+
+                        data: {
+
+                            labels: datos.meses,
+
+                            datasets: [{
+
+                                label: 'Lectura Acumulada',
+
+                                data: datos.lecturas,
+
+                                borderColor: 'rgba(118, 75, 162, 1)',
+
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+
+                                borderWidth: 3,
+
+                                fill: true,
+
+                                tension: 0.4,
+
+                                pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+
+                                pointBorderColor: '#fff',
+
+                                pointBorderWidth: 2,
+
+                                pointRadius: 6,
+
+                                pointHoverRadius: 8
+
+                            }]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            plugins: {
+
+                                legend: {display: true,position: 'top'},
+
+                                tooltip: {
+
+                                    callbacks: {
+
+                                        label: function(context) {
+
+                                            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} kWh`;
+
+                                        }
+
+                                    }
+
+                                }
+
+                            },
+
+                            scales: {
+
+                                y: {
+
+                                    beginAtZero: false,
+
+                                    title: {display:true,text:'Lectura Acumulada (kWh)'},
+
+                                    ticks: {callback: function(value){return value.toLocaleString();}}
+
+                                },
+
+                                x: {title:{display:true,text:'Mes'}}
+
+                            }
+
+                        }
+
+                    });
+
+                }
+
+                console.log('✅ Gráficas creadas exitosamente');
+
+            } catch (error) {
+
+                console.error('❌ Error creando gráficas:', error);
+
+            }
+
+        }
+
+        function cerrarGraficas() {
+
+            document.getElementById('chartsModal').style.display = 'none';
+
+            if (consumosChart) { consumosChart.destroy(); consumosChart = null; }
+
+            if (lecturasChart) { lecturasChart.destroy(); lecturasChart = null; }
+
+        }
+
+        window.onclick = function(event) {
+
+            const modal = document.getElementById('chartsModal');
+
+            if (event.target === modal) cerrarGraficas();
+
+        }
     window.onclick = function (event) {
       const modal = document.getElementById('chartsModal');
       if (event.target === modal) modal.style.display = 'none';
@@ -883,6 +1187,7 @@
   </script>
 </body>
 </html>
+
 
 
 
