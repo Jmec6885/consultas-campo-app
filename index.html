@@ -878,83 +878,82 @@
         }
 
         function mostrarResultados(resultados) {
-            const container = document.getElementById('searchResults');
-            const config = tableConfigs[selectedTable];
-            
-            if (resultados.length === 0) {
-                container.innerHTML = `
-                    <div class="result-card">
-                        <div class="result-header">❌ No se encontraron resultados</div>
-                        <p>Intente con otros criterios de búsqueda</p>
-                    </div>
-                `;
-                return;
+    const container = document.getElementById('searchResults');
+    const config = tableConfigs[selectedTable];
+    
+    if (resultados.length === 0) {
+        container.innerHTML = `
+            <div class="result-card">
+                <div class="result-header">❌ No se encontraron resultados</div>
+                <p>Intente con otros criterios de búsqueda</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
+    
+    resultados.forEach((item, index) => {
+        html += `
+            <div class="result-card">
+                <div class="result-header">${config.icon} Resultado ${index + 1}</div>
+        `;
+        
+        // Mostrar campos según la configuración de la tabla
+        config.resultFields.forEach(field => {
+            const valor = item[field] || 'N/A';
+            html += `
+                <div class="result-item">
+                    <span class="result-label">${field}:</span> ${valor}
+                </div>
+            `;
+        });
+
+        // Generar botones de acción según la tabla
+        html += '<div class="action-buttons">';
+        
+        config.actions.forEach(action => {
+            const actionValue = item[action];
+            if (actionValue) {
+                switch (action) {
+                    case 'coordenadas':
+                    case 'Coordenadas':
+                    case 'CoordenadasLector':
+                        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${actionValue}')">📍 Ver Ubicación</button>`;
+                        break;
+                    case 'coordenadasgis':
+                    case 'CoordenadasGis':  // corregido
+                        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${actionValue}')">🗺️ Ver GIS</button>`;
+                        break;
+                    case 'foto':
+                    case 'FotoLink':
+                    case 'Fotolink':
+                        html += `<button class="btn btn-secondary" onclick="verFoto('${actionValue}')">📸 Ver Foto</button>`;
+                        break;
+                    case 'grafica':
+                    case 'Grafica':
+                        html += `<button class="btn btn-secondary" onclick="verGraficas(
+                            \`${actionValue}\`,
+                            \`${item.NombreCliente || item.cuentacontrato || 'Cliente'}\`,
+                            \`${item.CuentaContrato || item.cuentacontrato || 'N/A'}\`
+                        )">📊 Ver Gráficas</button>`;
+                        break;
+                    case 'consumos':
+                        html += `<button class="btn btn-secondary" onclick="verGraficas(
+                            \`${actionValue}\`,
+                            \`Consumos - ${item.medidor || 'Medidor'}\`,
+                            \`${item.cuentacontrato || 'N/A'}\`
+                        )">📊 Ver Consumos</button>`;
+                        break;
+                }
             }
+        });
 
-            let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
-            
-            resultados.forEach((item, index) => {
-                html += `
-                    <div class="result-card">
-                        <div class="result-header">${config.icon} Resultado ${index + 1}</div>
-                `;
-                
-                // Mostrar campos según la configuración de la tabla
-                config.resultFields.forEach(field => {
-                    const valor = item[field] || 'N/A';
-                    html += `
-                        <div class="result-item">
-                            <span class="result-label">${field}:</span> ${valor}
-                        </div>
-                    `;
-                });
-
-                // Generar botones de acción según la tabla
-                html += '<div class="action-buttons">';
-                
-                config.actions.forEach(action => {
-                    const actionValue = item[action];
-                    if (actionValue) {
-                        switch (action) {
-                            case 'coordenadas':
-                            case 'Coordenadas':
-                            case 'CoordenadasLector':
-                                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${actionValue}')">📍 Ver Ubicación</button>`;
-                                break;
-                            case 'coordenadasgis':
-                            case 'Coordendasgis':
-                            case 'CoordenadasGis':
-                                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${actionValue}')">🗺️ Ver GIS</button>`;
-                                break;
-                            case 'foto':
-                            case 'FotoLink':
-                            case 'Fotolink':
-                                html += `<button class="btn btn-secondary" onclick="verFoto('${actionValue}')">📸 Ver Foto</button>`;
-                                break;
-                            case 'grafica':
-                            case 'Grafica':
-                                html += `<button class="btn btn-secondary" onclick="verGraficas(
-                                    \`${actionValue}\`,
-                                    \`${item.NombreCliente || item.cuentacontrato || 'Cliente'}\`,
-                                    \`${item.CuentaContrato || item.cuentacontrato || 'N/A'}\`
-                                )">📊 Ver Gráficas</button>`;
-                                break;
-                            case 'consumos':
-                                html += `<button class="btn btn-secondary" onclick="verGraficas(
-                                    \`${actionValue}\`,
-                                    \`Consumos - ${item.medidor || 'Medidor'}\`,
-                                    \`${item.cuentacontrato || 'N/A'}\`
-                                )">📊 Ver Consumos</button>`;
-                                break;
-                        }
-                    }
-                });
-                
-                html += '</div></div>';
-            });
-            
-            container.innerHTML = html;
-        }
+        html += '</div></div>';
+    });
+    
+    container.innerHTML = html;
+}
 
         function abrirCoordenadas(coordenadas) {
             if (coordenadas) {
@@ -1256,6 +1255,7 @@
     </script>
 </body>
 </html>
+
 
 
 
