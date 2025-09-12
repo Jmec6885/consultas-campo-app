@@ -514,15 +514,6 @@
                         <span class="table-icon">⚡</span>
                         <div class="table-title">TX y Cortes</div>
                         <div class="table-description">Transformadores y cortes de energía</div>
-                        </div>
-
-                    <div class="table-option" onclick="mostrarCargaMasiva()">
-                        <span class="table-icon">📤</span>
-                        <div class="table-title">Subir Archivos</div>
-                        <div class="table-description">Carga masiva de datos Excel</div>
-                       
-                        
-                        </div>
                     </div>
                 </div>
             </div>
@@ -592,18 +583,20 @@
     let currentUser = null;
     let selectedTable = null;
 
+    // ✅ CORREGIDO: Configuración actualizada con nombres correctos de campos
     const tableConfigs = {
-            'consultas_servicios': {
-                title: 'Consultas de Servicios',
-                icon: '🏠',
-                fields: [
-                    { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
-                    { key: 'Medidor', label: 'Medidor', type: 'exact' },
-                    { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
-                ],
-                resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
-                actions: ['coordenadas', 'coordenadasgis', 'foto', 'grafica']
-            },
+      'consultas_servicios': {
+        title: 'Consultas de Servicios',
+        icon: '🏠',
+        fields: [
+          { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
+          { key: 'Medidor', label: 'Medidor', type: 'exact' },
+          { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
+        ],
+        resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
+        // ✅ Cambiadas a minúsculas para coincidir con los campos de la BD
+        actionFields: ['coordenadas', 'coordenadasgis', 'foto', 'consumos']
+      },
       'Consumos': {
         title: 'Consumos',
         icon: '📊',
@@ -612,7 +605,7 @@
           { key: 'medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['cuentacontrato', 'medidor'],
-        actions: ['consumos']
+        actionFields: ['consumos'] // Campo que contiene datos de consumos
       },
       'Coordenadas': {
         title: 'Coordenadas',
@@ -622,7 +615,7 @@
           { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' }
         ],
         resultFields: ['Medidor', 'CuentaContrato'],
-        actions: ['CoordenadasLector', 'CoordenadasGis']
+        actionFields: ['CoordenadasLector', 'CoordenadasGis']
       },
       'OS Pendientes': {
         title: 'OS Pendientes',
@@ -634,7 +627,7 @@
           { key: 'Medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['OSATMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
-        actions: ['Coordenadas', 'FotoLink', 'CoordenadasGis']
+        actionFields: ['Coordenadas', 'FotoLink', 'CoordenadasGis']
       },
       'OSCerradas': {
         title: 'OS Cerradas',
@@ -646,7 +639,7 @@
           { key: 'Medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['OSATOMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
-        actions: ['Coordenadas', 'FotoLink']
+        actionFields: ['Coordenadas', 'FotoLink']
       },
       'TX y Cortes': {
         title: 'TX y Cortes',
@@ -656,9 +649,9 @@
           { key: 'Circuitos', label: 'Circuitos', type: 'like' }
         ],
         resultFields: ['TXCortes', 'Circuitos', 'Comentario'],
-        actions: ['Coordenadas']
+        actionFields: ['Coordenadas']
       }
-    };
+    }
 
     async function login() {
       const username = document.getElementById('username').value.trim();
@@ -963,6 +956,7 @@ if (data.rol === 'administrador') {
   </script>
 </body>
 </html>
+
 
 
 
