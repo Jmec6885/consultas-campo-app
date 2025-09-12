@@ -583,9 +583,8 @@
     let currentUser = null;
     let selectedTable = null;
 
-    // ✅ CORREGIDO: Configuración actualizada con nombres correctos de campos
     const tableConfigs = {
-      'consultas_servicios': {
+ 'consultas_servicios': {
         title: 'Consultas de Servicios',
         icon: '🏠',
         fields: [
@@ -605,7 +604,7 @@
           { key: 'medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['cuentacontrato', 'medidor'],
-        actionFields: ['consumos'] // Campo que contiene datos de consumos
+        actions: ['consumos']
       },
       'Coordenadas': {
         title: 'Coordenadas',
@@ -615,7 +614,7 @@
           { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' }
         ],
         resultFields: ['Medidor', 'CuentaContrato'],
-        actionFields: ['CoordenadasLector', 'CoordenadasGis']
+        actions: ['CoordenadasLector', 'CoordenadasGis']
       },
       'OS Pendientes': {
         title: 'OS Pendientes',
@@ -627,7 +626,7 @@
           { key: 'Medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['OSATMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
-        actionFields: ['Coordenadas', 'FotoLink', 'CoordenadasGis']
+        actions: ['Coordenadas', 'FotoLink', 'CoordenadasGis']
       },
       'OSCerradas': {
         title: 'OS Cerradas',
@@ -639,7 +638,7 @@
           { key: 'Medidor', label: 'Medidor', type: 'exact' }
         ],
         resultFields: ['OSATOMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
-        actionFields: ['Coordenadas', 'FotoLink']
+        actions: ['Coordenadas', 'FotoLink']
       },
       'TX y Cortes': {
         title: 'TX y Cortes',
@@ -649,9 +648,9 @@
           { key: 'Circuitos', label: 'Circuitos', type: 'like' }
         ],
         resultFields: ['TXCortes', 'Circuitos', 'Comentario'],
-        actionFields: ['Coordenadas']
+        actions: ['Coordenadas']
       }
-    }
+    };
 
     async function login() {
       const username = document.getElementById('username').value.trim();
@@ -711,27 +710,6 @@
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('tableSelectionSection').style.display = 'block';
 
-       // ✅ Mostrar botón "Subir Archivos" solo si es admin
-const selector = document.querySelector('.table-selector');
-const existe = document.getElementById('btnSubirArchivos');
-
-// Siempre eliminar el botón si existe (por si cambia de usuario)
-if (existe) existe.remove();
-
-// Agregar solo si es administrador
-if (data.rol === 'administrador') {
-  const btn = document.createElement('div');
-  btn.id = 'btnSubirArchivos';
-  btn.className = 'table-option';
-  btn.innerHTML = `
-    <span class="table-icon">📤</span>
-    <div class="table-title">Subir Archivos</div>
-    <div class="table-description">Carga masiva de datos Excel</div>
-  `;
-  btn.onclick = mostrarCargaMasiva;
-  selector.appendChild(btn);
-}
-
         iniciarVerificacionSesion();
 
       } catch (err) {
@@ -780,35 +758,25 @@ if (data.rol === 'administrador') {
     }
 
     async function logout() {
-  if (currentUser) {
-    await supabaseClient
-      .from('usuarios')
-      .update({ sessionactiva: false, sessiontoken: null })
-      .eq('id', currentUser.id);
-  }
+      if (currentUser) {
+        await supabaseClient
+          .from('usuarios')
+          .update({ sessionactiva: false, sessiontoken: null })
+          .eq('id', currentUser.id);
+      }
 
-  currentUser = null;
-  selectedTable = null;
+      currentUser = null;
+      selectedTable = null;
 
-  document.getElementById('userInfo').classList.add('hidden');
-  document.getElementById('loginSection').style.display = 'block';
-  document.getElementById('tableSelectionSection').style.display = 'none';
-  document.getElementById('searchSection').style.display = 'none';
-  document.getElementById('adminSection').style.display = 'none';
+      document.getElementById('userInfo').classList.add('hidden');
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('tableSelectionSection').style.display = 'none';
+      document.getElementById('searchSection').style.display = 'none';
 
-  // ✅ Al cerrar sesión, eliminar el botón "Subir Archivos" si existe
-  const btnSubir = document.getElementById('btnSubirArchivos');
-  if (btnSubir) btnSubir.remove();
-
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
-  document.getElementById('searchResults').innerHTML = '';
-}
-
-    function mostrarCargaMasiva() {
-  document.getElementById('tableSelectionSection').style.display = 'none';
-  document.getElementById('adminSection').style.display = 'block';
-}
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('searchResults').innerHTML = '';
+    }
 
     function seleccionarTabla(tableName) {
       selectedTable = tableName;
@@ -836,7 +804,6 @@ if (data.rol === 'administrador') {
 
     function volverATablas() {
       document.getElementById('searchSection').style.display = 'none';
-      document.getElementById('adminSection').style.display = 'none';
       document.getElementById('tableSelectionSection').style.display = 'block';
       document.getElementById('searchResults').innerHTML = '';
       selectedTable = null;
@@ -882,7 +849,7 @@ if (data.rol === 'administrador') {
           if (!val) return;
           if (action.includes('Coordenadas')) html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
           if (action === 'FotoLink' || action === 'Fotolink') html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-          if (action === 'Grafica') html += `<button class="btn btn-secondary" onclick="verGraficas('${val}', 'Grafica', '${item.cuentacontrato}')">📊 Ver Consumos</button>`;
+          if (action === 'consumos') html += `<button class="btn btn-secondary" onclick="verGraficas('${val}', 'Consumos', '${item.cuentacontrato}')">📊 Ver Consumos</button>`;
         });
         html += '</div></div>';
       });
@@ -890,10 +857,10 @@ if (data.rol === 'administrador') {
     }
 
     function abrirCoordenadas(coordenadas) {
-      if (Coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
+      if (coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
     }
 
-    function verFotoLink(link) {
+    function verFoto(link) {
       if (link) window.open(link, '_blank');
     }
 
@@ -901,6 +868,7 @@ if (data.rol === 'administrador') {
       const modal = document.getElementById('chartsModal');
       document.getElementById('modalTitle').textContent = `Gráficas - ${titulo} (${cuenta})`;
       modal.style.display = 'block';
+      // Aquí puedes agregar lógica para graficar si tienes datos
     }
 
     function cerrarGraficas() {
@@ -912,61 +880,9 @@ if (data.rol === 'administrador') {
       if (event.target === modal) modal.style.display = 'none';
     };
 
-    // 🔧 FUNCIÓN: Carga masiva de archivos Excel (solo admin)
-    async function procesarArchivo() {
-      const tabla = document.getElementById('tablaCarga').value;
-      const fileInput = document.getElementById('fileInput');
-      const resultado = document.getElementById('cargaResultado');
-
-      if (!fileInput.files.length) {
-        alert('Selecciona un archivo');
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-
-      reader.onload = async function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-
-        if (!json || json.length === 0) {
-          resultado.innerHTML = '❌ El archivo está vacío o tiene formato incorrecto.';
-          return;
-        }
-
-        resultado.innerHTML = `📊 Se encontraron <strong>${json.length}</strong> filas. Procesando...`;
-
-        const { error } = await supabaseClient.from(tabla).insert(json);
-
-        if (error) {
-          resultado.innerHTML = `❌ Error al subir: ${error.message}`;
-        } else {
-          resultado.innerHTML = `✅ <strong>${json.length}</strong> registros subidos correctamente a <strong>${tabla}</strong>.`;
-          fileInput.value = '';
-        }
-      };
-
-      reader.readAsArrayBuffer(file);
-    }
-
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
 
 
 
