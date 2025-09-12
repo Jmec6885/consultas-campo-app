@@ -718,9 +718,23 @@
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('tableSelectionSection').style.display = 'block';
 
-        if (data.rol === 'administrador') {
-          document.getElementById('adminSection').classList.remove('hidden');
-        }
+       // ✅ Mostrar botón "Subir Archivos" solo si es admin
+if (data.rol === 'administrador') {
+  const selector = document.querySelector('.table-selector');
+  const existe = document.getElementById('btnSubirArchivos');
+  if (!existe) {
+    const btn = document.createElement('div');
+    btn.id = 'btnSubirArchivos';
+    btn.className = 'table-option';
+    btn.innerHTML = `
+      <span class="table-icon">📤</span>
+      <div class="table-title">Subir Archivos</div>
+      <div class="table-description">Carga masiva de datos Excel</div>
+    `;
+    btn.onclick = mostrarCargaMasiva;
+    selector.appendChild(btn);
+  }
+}
 
         iniciarVerificacionSesion();
 
@@ -770,31 +784,35 @@
     }
 
     async function logout() {
-      if (currentUser) {
-        await supabaseClient
-          .from('usuarios')
-          .update({ sessionactiva: false, sessiontoken: null })
-          .eq('id', currentUser.id);
-      }
+  if (currentUser) {
+    await supabaseClient
+      .from('usuarios')
+      .update({ sessionactiva: false, sessiontoken: null })
+      .eq('id', currentUser.id);
+  }
 
-      currentUser = null;
-      selectedTable = null;
+  currentUser = null;
+  selectedTable = null;
 
-      document.getElementById('userInfo').classList.add('hidden');
-      document.getElementById('loginSection').style.display = 'block';
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('searchSection').style.display = 'none';
-      document.getElementById('adminSection').style.display = 'none';
+  document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'none';
+  document.getElementById('adminSection').style.display = 'none';
 
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('searchResults').innerHTML = '';
-    }
+  // ✅ Al cerrar sesión, eliminar el botón "Subir Archivos" si existe
+  const btnSubir = document.getElementById('btnSubirArchivos');
+  if (btnSubir) btnSubir.remove();
+
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
 
     function mostrarCargaMasiva() {
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('adminSection').style.display = 'block';
-    }
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('adminSection').style.display = 'block';
+}
 
     function seleccionarTabla(tableName) {
       selectedTable = tableName;
@@ -942,6 +960,7 @@
   </script>
 </body>
 </html>
+
 
 
 
