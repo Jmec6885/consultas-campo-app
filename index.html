@@ -204,41 +204,49 @@
     const cuenta = document.getElementById('searchCuenta').value.trim();
     const medidor = document.getElementById('searchMedidor').value.trim();
     const nombre = document.getElementById('searchNombre').value.trim();
-
+    
     if (!cuenta && !medidor && !nombre) {
         alert('Por favor ingrese al menos un criterio de búsqueda');
         return;
     }
-
-    let filtros = [];
+    
+    let query = supabaseClient.from('consultas_servicios').select('*');
+    
+    // Lista de condiciones que se agregarán a la consulta
+    let conditions = [];
+    
+    // Agregar cada condición solo si el campo de búsqueda no está vacío
     if (cuenta) {
-        filtros.push(`"CuentaContrato".ilike.%${cuenta}%`);
+        conditions.push(`CuentaContrato.ilike.%${cuenta}%`);
     }
     if (medidor) {
-        filtros.push(`"Medidor".ilike.%${medidor}%`);
+        conditions.push(`Medidor.ilike.%${medidor}%`);
     }
     if (nombre) {
-        filtros.push(`"NombreCliente".ilike.%${nombre}%`);
+        conditions.push(`NombreCliente.ilike.%${nombre}%`);
     }
     
-    // Unir los filtros con 'or'
-    const query = supabaseClient.from('consultas_servicios').select('*').or(filtros.join(','));
-    
+    // Si hay condiciones, aplicar el filtro .or()
+    if (conditions.length > 0) {
+        query = query.or(conditions.join(','));
+    }
+
     try {
         const { data, error } = await query;
         
         if (error) {
-            console.error('Error en la búsqueda:', error);
-            alert('Ocurrió un error al buscar la información.');
+            console.error('Error en la búsqueda:', error.message);
+            alert('Ocurrió un error al buscar la información. Por favor, intente de nuevo.');
             return;
         }
+        
         mostrarResultados(data || []);
+        
     } catch (err) {
-        console.error('Error en la búsqueda:', err);
+        console.error('Error en la búsqueda (catch):', err);
         alert('Ocurrió un error al buscar la información. Por favor, intente de nuevo.');
     }
 }
-
         function mostrarResultados(resultados) {
             const container = document.getElementById('searchResults');
             if (resultados.length === 0) {
