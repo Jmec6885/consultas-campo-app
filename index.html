@@ -849,8 +849,7 @@
           if (!val) return;
           if (action.includes('Coordenadas')) html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
           if (action === 'FotoLink' || action === 'Fotolink') html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-          if (action === 'Grafica') html += `<button class="btn btn-secondary" onclick="verGraficas('${val}', 'Grafica', '${item.cuentacontrato}')">📊 Ver Consumos</button>`;
-        });
+      });
         html += '</div></div>';
       });
       container.innerHTML = html;
@@ -868,6 +867,7 @@
   </script>
 </body>
 </html>
+
 
 
 
