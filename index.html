@@ -582,6 +582,7 @@
 
     let currentUser = null;
     let selectedTable = null;
+    let consultasData = []; // Array para almacenar los datos de consultas
 
     const tableConfigs = {
      'consultas_servicios': {
@@ -593,8 +594,8 @@
           { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
         ],
         resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
-        // ✅ Cambiadas a minúsculas para coincidir con los campos de la BD
-        actions: ['Coordenadas', 'Coordenadasgis', 'FotoLink', 'Grafica']
+        // ✅ Corregidos los nombres de acciones
+        actions: ['coordenadas', 'coordenadasgis', 'fotolink', 'grafica']
       },
       'Consumos': {
         title: 'Consumos',
@@ -651,6 +652,183 @@
         actions: ['Coordenadas']
       }
     };
+
+    // ✅ Variables para las gráficas
+    let consumosChart = null;
+    let lecturasChart = null;
+
+    // ✅ Función para parsear datos de gráficas (consumos)
+    function parsearDatosGrafica(graficaData) {
+        if (!graficaData || graficaData.trim() === '') {
+            return { meses: [], lecturas: [], consumos: [] };
+        }
+
+        const meses = [], lecturas = [], consumos = [];
+        const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
+
+        for (const linea of lineas) {
+            const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
+            if (match) {
+                const [, mes, lectura, consumo] = match;
+                meses.push(mes);
+                lecturas.push(parseInt(lectura));
+                if (consumo !== undefined) {
+                    consumos.push(parseInt(consumo));
+                } else if (lecturas.length > 1) {
+                    const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
+                    consumos.push(Math.max(0, consumoCalculado));
+                } else {
+                    consumos.push(0);
+                }
+            }
+        }
+        return { meses, lecturas, consumos };
+    }
+
+    // ✅ Función para mostrar gráficas por índice
+    function verGraficasPorIndice(dataIndex) {
+        if (dataIndex === undefined || dataIndex < 0 || dataIndex >= consultasData.length) {
+            alert('Datos de gráfica no disponibles');
+            return;
+        }
+        const item = consultasData[dataIndex];
+        verGraficas(item.consumos || '', item.cuentacontrato || 'Cliente', item.medidor || 'N/A');
+    }
+
+    // ✅ Función para mostrar gráficas
+    function verGraficas(graficaData, nombreCliente, cuentaContrato) {
+        try {
+            const modal = document.getElementById('chartsModal');
+            const modalTitle = document.getElementById('modalTitle');
+            modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
+            modal.style.display = 'block';
+
+            // Parsear los datos
+            const datos = parsearDatosGrafica(graficaData);
+
+            // Si no hay datos válidos, mostrar datos de ejemplo
+            if (datos.meses.length === 0) {
+                datos.meses = ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.'];
+                datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
+                datos.consumos = [0, 150, 130, 140, 160, 170];
+            }
+
+            if (consumosChart) consumosChart.destroy();
+            if (lecturasChart) lecturasChart.destroy();
+
+            setTimeout(() => { crearGraficas(datos); }, 100);
+
+        } catch (error) {
+            console.error('❌ Error mostrando gráficas:', error);
+            alert('Error mostrando las gráficas. Por favor intente de nuevo.');
+        }
+    }
+
+    // ✅ Función para crear gráficas
+    function crearGraficas(datos) {
+        try {
+            const ctxConsumos = document.getElementById('consumosChart');
+            if (ctxConsumos) {
+                consumosChart = new Chart(ctxConsumos, {
+                    type: 'bar',
+                    data: {
+                        labels: datos.meses,
+                        datasets: [{
+                            label: 'Consumo (kWh)',
+                            data: datos.consumos,
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 2,
+                            borderRadius: 5,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: true,position: 'top'},
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} kWh`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {beginAtZero: true,title: {display:true,text:'Consumo (kWh)'}},
+                            x: {title: {display:true,text:'Mes'}}
+                        }
+                    }
+                });
+            }
+
+            const ctxLecturas = document.getElementById('lecturasChart');
+            if (ctxLecturas) {
+                lecturasChart = new Chart(ctxLecturas, {
+                    type: 'line',
+                    data: {
+                        labels: datos.meses,
+                        datasets: [{
+                            label: 'Lectura Acumulada',
+                            data: datos.lecturas,
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: true,position: 'top'},
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} kWh`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {display:true,text:'Lectura Acumulada (kWh)'},
+                                ticks: {callback: function(value){return value.toLocaleString();}}
+                            },
+                            x: {title:{display:true,text:'Mes'}}
+                        }
+                    }
+                });
+            }
+
+            console.log('✅ Gráficas creadas exitosamente');
+
+        } catch (error) {
+            console.error('❌ Error creando gráficas:', error);
+        }
+    }
+
+    // ✅ Función para cerrar gráficas
+    function cerrarGraficas() {
+        document.getElementById('chartsModal').style.display = 'none';
+        if (consumosChart) { consumosChart.destroy(); consumosChart = null; }
+        if (lecturasChart) { lecturasChart.destroy(); lecturasChart = null; }
+    }
+
+    // ✅ Cerrar modal al hacer click fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('chartsModal');
+        if (event.target === modal) cerrarGraficas();
+    }
 
     async function login() {
       const username = document.getElementById('username').value.trim();
@@ -832,42 +1010,84 @@
     function mostrarResultados(resultados) {
       const container = document.getElementById('searchResults');
       const config = tableConfigs[selectedTable];
+      
+      // ✅ Guardamos los datos para uso posterior
+      consultasData = resultados;
+
       if (resultados.length === 0) {
         container.innerHTML = '<div class="result-card">❌ No se encontraron resultados</div>';
         return;
       }
 
       let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
+      
       resultados.forEach((item, index) => {
         html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
         config.resultFields.forEach(field => {
           html += `<div><strong>${field}:</strong> ${item[field] || 'N/A'}</div>`;
         });
+        
         html += '<div class="action-buttons">';
+        
         config.actions.forEach(action => {
           const val = item[action];
           if (!val) return;
-          if (action.includes('Coordenadas')) html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
-          if (action === 'FotoLink' || action === 'Fotolink') html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-      });
+
+          // ✅ Lógica específica para cada tabla y acción
+          if (selectedTable === 'consultas_servicios') {
+            // Para tabla consultas_servicios
+            if (action === 'coordenadas') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            } else if (action === 'coordenadasgis') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+            } else if (action === 'fotolink') {
+              html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+            } else if (action === 'grafica') {
+              html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Gráficas</button>`;
+            }
+          } else if (selectedTable === 'Consumos') {
+            // Para tabla Consumos
+            if (action === 'consumos') {
+              html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Gráficas</button>`;
+            }
+          } else if (selectedTable === 'TX y Cortes') {
+            // Para tabla TX y Cortes - solo "Ver Ubicación"
+            if (action === 'Coordenadas') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+            }
+          } else {
+            // Para las demás tablas (comportamiento original)
+            if (action.toLowerCase().includes('coordenadas')) {
+              if (action === 'CoordenadasLector') {
+                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+              } else if (action === 'CoordenadasGis') {
+                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+              } else {
+                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+              }
+            } else if (action === 'FotoLink' || action === 'fotolink') {
+              html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+            }
+          }
+        });
+        
         html += '</div></div>';
       });
+      
       container.innerHTML = html;
     }
 
     function abrirCoordenadas(coordenadas) {
-      if (coordenadas) window.open(`https://www.google.com/maps?q=$coordenadas}`, '_blank');
+      if (coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
     }
 
     function verFoto(link) {
       if (link) window.open(link, '_blank');
     }
 
-           
   </script>
 </body>
 </html>
-
 
 
 
