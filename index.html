@@ -1073,20 +1073,16 @@
           // ✅ Lógica específica para cada tabla y acción
           if (selectedTable === 'consultas_servicios') {
             // Para tabla consultas_servicios
-            if (action === 'coordenadas') {
+            if (action === 'Coordenadas') {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-            } else if (action === 'coordenadasgis') {
+            } else if (action === 'Coordenadasgis') {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
-            } else if (action === 'fotolink') {
+            } else if (action === 'FotoLink') {
               html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            } else if (action === 'grafica') {
+            } else if (action === 'Grafica') {
               html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Gráficas</button>`;
             }
-          } else if (selectedTable === 'Consumos') {
-            // Para tabla Consumos
-            if (action === 'consumos') {
-              html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Gráficas</button>`;
-            }
+          
           } else if (selectedTable === 'TX y Cortes') {
             // Para tabla TX y Cortes - solo "Ver Ubicación"
             if (action === 'Coordenadas') {
@@ -1125,6 +1121,7 @@
   </script>
 </body>
 </html>
+
 
 
 
