@@ -595,7 +595,7 @@
         ],
         resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
         // ✅ Corregidos los nombres de acciones
-        actions: ['Coordenadas', 'Coordenadasgis', 'FotoLink']
+        actions: ['coordenadas', 'coordenadasgis', 'fotolink', 'grafica']
       },
       'Consumos': {
         title: 'Consumos',
@@ -743,11 +743,26 @@
                             borderSkipped: false,
                         }]
                     },
+                    plugins: [ChartDataLabels], // ✅ Activar plugin de etiquetas
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {display: true,position: 'top'},
+                            legend: {display: true, position: 'top'},
+                            // ✅ Configuración de etiquetas de datos
+                            datalabels: {
+                                display: true,
+                                anchor: 'end',
+                                align: 'top',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
+                                },
+                                color: '#2d3748',
+                                formatter: function(value) {
+                                    return value + ' kWh';
+                                }
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -757,8 +772,16 @@
                             }
                         },
                         scales: {
-                            y: {beginAtZero: true,title: {display:true,text:'Consumo (kWh)'}},
-                            x: {title: {display:true,text:'Mes'}}
+                            y: {
+                                beginAtZero: true,
+                                title: {display: true, text: 'Consumo (kWh)'},
+                                // ✅ Agregar espacio extra arriba para las etiquetas
+                                suggestedMax: function(context) {
+                                    const max = Math.max(...datos.consumos);
+                                    return max * 1.15; // 15% más de espacio
+                                }
+                            },
+                            x: {title: {display: true, text: 'Mes'}}
                         }
                     }
                 });
@@ -781,15 +804,36 @@
                             pointBackgroundColor: 'rgba(118, 75, 162, 1)',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 8
+                            pointRadius: 8, // ✅ Puntos un poco más grandes
+                            pointHoverRadius: 10
                         }]
                     },
+                    plugins: [ChartDataLabels], // ✅ Activar plugin de etiquetas
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {display: true,position: 'top'},
+                            legend: {display: true, position: 'top'},
+                            // ✅ Configuración de etiquetas de datos para líneas
+                            datalabels: {
+                                display: true,
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 5,
+                                font: {
+                                    weight: 'bold',
+                                    size: 11
+                                },
+                                color: '#2d3748',
+                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                borderColor: 'rgba(118, 75, 162, 0.5)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                padding: 3,
+                                formatter: function(value) {
+                                    return value.toLocaleString() + ' kWh';
+                                }
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -801,10 +845,15 @@
                         scales: {
                             y: {
                                 beginAtZero: false,
-                                title: {display:true,text:'Lectura Acumulada (kWh)'},
-                                ticks: {callback: function(value){return value.toLocaleString();}}
+                                title: {display: true, text: 'Lectura Acumulada (kWh)'},
+                                ticks: {callback: function(value){return value.toLocaleString();}},
+                                // ✅ Agregar espacio extra arriba para las etiquetas
+                                suggestedMax: function(context) {
+                                    const max = Math.max(...datos.lecturas);
+                                    return max * 1.1; // 10% más de espacio
+                                }
                             },
-                            x: {title:{display:true,text:'Mes'}}
+                            x: {title: {display: true, text: 'Mes'}}
                         }
                     }
                 });
@@ -1036,13 +1085,13 @@
           // ✅ Lógica específica para cada tabla y acción
           if (selectedTable === 'consultas_servicios') {
             // Para tabla consultas_servicios
-            if (action === 'Coordenadas') {
+            if (action === 'coordenadas') {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-            } else if (action === 'Coordenadasgis') {
+            } else if (action === 'coordenadasgis') {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
-            } else if (action === 'FotoLink') {
+            } else if (action === 'fotolink') {
               html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            } else if (action === 'Grafica') {
+            } else if (action === 'grafica') {
               html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Gráficas</button>`;
             }
           } else if (selectedTable === 'Consumos') {
@@ -1088,19 +1137,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
