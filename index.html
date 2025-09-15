@@ -674,43 +674,75 @@
     }
 
     // ✅ Función para mostrar gráficas por índice
-    function verGraficasPorIndice(dataIndex) {
-        if (dataIndex === undefined || dataIndex < 0 || dataIndex >= consultasData.length) {
-            alert('Datos de gráfica no disponibles');
+    // Función para parsear datos de gráficas (consumos) sin cambiar ya que parece adecuada
+function parsearDatosGrafica(graficaData) {
+    if (!graficaData || graficaData.trim() === '') {
+        return { meses: [], lecturas: [], consumos: [] };
+    }
+
+    const meses = [], lecturas = [], consumos = [];
+    const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
+
+    for (const linea of lineas) {
+        const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
+        if (match) {
+            const [, mes, lectura, consumo] = match;
+            meses.push(mes);
+            lecturas.push(parseInt(lectura));
+            if (consumo !== undefined) {
+                consumos.push(parseInt(consumo));
+            } else if (lecturas.length > 1) {
+                const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
+                consumos.push(Math.max(0, consumoCalculado));
+            } else {
+                consumos.push(0);
+            }
+        }
+    }
+    return { meses, lecturas, consumos };
+}
+
+// Función para mostrar gráficas por índice con uso correcto del dato grafica
+function verGraficasPorIndice(dataIndex) {
+    if (dataIndex === undefined || dataIndex < 0 || dataIndex >= consultasData.length) {
+        alert('Datos de gráfica no disponibles');
+        return;
+    }
+    const item = consultasData[dataIndex];
+    verGraficas(item.Grafica || item.grafica || '', item.NombreCliente || 'Cliente', item.CuentaContrato || 'N/A');
+}
+
+// Función para mostrar gráficas usando datos dinámicos de la fila sin caer en ejemplo estático salvo que no haya datos en absoluto
+function verGraficas(graficaData, nombreCliente, cuentaContrato) {
+    try {
+        const modal = document.getElementById('chartsModal');
+        const modalTitle = document.getElementById('modalTitle');
+        modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
+        modal.style.display = 'block';
+
+        // Parsear los datos dinámicos
+        const datos = parsearDatosGrafica(graficaData);
+
+        // Solo si no hay ningún dato válido mostramos mensaje o ejemplo muy discreto
+        if (datos.meses.length === 0) {
+            alert('No hay datos de consumo y lectura disponibles para esta fila.');
+            cerrarGraficas();
             return;
         }
-        const item = consultasData[dataIndex];
-        verGraficas(item.consumos || '', item.cuentacontrato || 'Cliente', item.medidor || 'N/A');
+
+        // Destruir gráficos previos si existen
+        if (consumosChart) consumosChart.destroy();
+        if (lecturasChart) lecturasChart.destroy();
+
+        // Crear las gráficas con los datos extraídos de la fila
+        setTimeout(() => { crearGraficas(datos); }, 100);
+
+    } catch (error) {
+        console.error('❌ Error mostrando gráficas:', error);
+        alert('Error mostrando las gráficas. Por favor intente de nuevo.');
     }
+}
 
-    // ✅ Función para mostrar gráficas
-    function verGraficas(graficaData, nombreCliente, cuentaContrato) {
-        try {
-            const modal = document.getElementById('chartsModal');
-            const modalTitle = document.getElementById('modalTitle');
-            modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
-            modal.style.display = 'block';
-
-            // Parsear los datos
-            const datos = parsearDatosGrafica(graficaData);
-
-            // Si no hay datos válidos, mostrar datos de ejemplo
-            if (datos.meses.length === 0) {
-                datos.meses = ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Ago.', 'Sep.'];
-                datos.lecturas = [1000, 1150, 1280, 1420, 1580, 1750];
-                datos.consumos = [0, 150, 130, 140, 160, 170];
-            }
-
-            if (consumosChart) consumosChart.destroy();
-            if (lecturasChart) lecturasChart.destroy();
-
-            setTimeout(() => { crearGraficas(datos); }, 100);
-
-        } catch (error) {
-            console.error('❌ Error mostrando gráficas:', error);
-            alert('Error mostrando las gráficas. Por favor intente de nuevo.');
-        }
-    }
 
     // ✅ Función para crear gráficas
     function crearGraficas(datos) {
@@ -1121,6 +1153,7 @@
   </script>
 </body>
 </html>
+
 
 
 
