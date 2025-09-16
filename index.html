@@ -1,3 +1,6 @@
+48.53 KB •1,396 líneas
+•
+El formato puede ser inconsistente con la fuente
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -409,38 +412,119 @@
             position: relative;
             height: 400px;
         }
-
+        
         /* Responsive */
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-            .table-selector {
-                grid-template-columns: 1fr;
-            }
-            .action-buttons {
-                flex-direction: column;
-            }
-            .btn-secondary, .btn-danger {
-                width: 100%;
-                margin: 5px 0;
-            }
-            .modal-content {
-                width: 95%;
-                margin: 5% auto;
-                padding: 15px;
-            }
-            .chart-container {
-                height: 300px;
-            }
-            .user-info {
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-bottom: 20px;
-                justify-content: center;
-            }
+@media (max-width: 768px) {
+    .search-grid {
+        grid-template-columns: 1fr;
+    }
+    .table-selector {
+        grid-template-columns: 1fr;
+    }
+    .action-buttons {
+        flex-direction: column;
+    }
+    .btn-secondary, .btn-danger {
+        width: 100%;
+        margin: 5px 0;
+    }
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        padding: 15px;
+    }
+    .chart-container {
+        height: 300px;
+    }
+    .user-info {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
+    
+    /* Mejoras para comentarios en móvil */
+    .result-item {
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 2px solid #e2e8f0;
+        line-height: 1.6;
+    }
+    
+    .result-item strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #2d3748;
+    }
+    
+    .result-item:not(:has(strong)):after {
+        content: "";
+        display: block;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.7;
+        padding: 5px 0;
+
+        /* Botón KML responsive */
+.btn-secondary {
+    font-size: 14px !important;
+    padding: 10px 15px !important;
+}
+    }
+}
+
+// Registro del Service Worker para funcionalidad offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    });
+}
+
+// Cache datos importantes en localStorage (solo para datos de sesión)
+function guardarDatosOffline() {
+    if (currentUser) {
+        sessionStorage.setItem('cleса_user_session', JSON.stringify({
+            user: currentUser,
+            timestamp: Date.now()
+        }));
+    }
+}
+
+// Verificar datos offline al cargar
+function verificarDatosOffline() {
+    const sessionData = sessionStorage.getItem('cleса_user_session');
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
+        
+        if (tiempoTranscurrido < 45) { // 45 minutos
+            currentUser = data.user;
+            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('tableSelectionSection').style.display = 'block';
+            return true;
         }
+    }
+    return false;
+}
+
+// Inicializar al cargar la página
+window.addEventListener('load', function() {
+    if (!verificarDatosOffline()) {
+        // Mostrar login si no hay sesión válida
+        document.getElementById('loginSection').style.display = 'block';
+    }
+});
     </style>
 </head>
 <body>
@@ -536,6 +620,8 @@
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="procesarArchivos()">📊 Procesar Archivos</button>
                     <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Datos</button>
+
+
                 </div>
             </div>
         </div>
@@ -557,11 +643,15 @@
                     <div class="chart-title">📈 Historial de Lecturas</div>
                     <div class="chart-container">
                         <canvas id="lecturasChart"></canvas>
+
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+
 
   <script>
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
@@ -901,140 +991,206 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         if (event.target === modal) cerrarGraficas();
     }
 
-    async function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
+    // Funciones para descarga KML
+function descargarKML() {
+    if (consultasData.length === 0) {
+        alert('No hay datos para descargar');
+        return;
+    }
 
-      if (!username || !password) {
-        alert('Por favor ingrese usuario y contraseña');
+    const ubicaciones = [];
+    consultasData.forEach((item, index) => {
+        const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+        if (coordenadas) {
+            const etiqueta = item.NombreCliente || item.CuentaContrato || item.Medidor || `Punto ${index + 1}`;
+            ubicaciones.push({ etiqueta, coordenadas });
+        }
+    });
+
+    if (ubicaciones.length === 0) {
+        alert('No se encontraron coordenadas válidas para descargar');
+        return;
+    }
+
+    const kmlString = generarKMLString(ubicaciones);
+    const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coordenadas_${selectedTable}_${new Date().getTime()}.kml`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function generarKMLString(ubicaciones) {
+    if (!Array.isArray(ubicaciones) || ubicaciones.length === 0) {
+        throw new Error("No se enviaron ubicaciones válidas para el KML.");
+    }
+    
+    let kml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n';
+    kml += '<name>Coordenadas de búsqueda CLESA</name>\n';
+
+    ubicaciones.forEach(({ etiqueta, coordenadas }) => {
+        const parts = coordenadas.split(',').map(s => s.trim());
+        let coordsForKML;
+        if (parts.length >= 2) {
+            coordsForKML = `${parts[1]},${parts[0]}`;
+            if (parts.length === 3) {
+                coordsForKML += `,${parts[2]}`;
+            }
+        } else {
+            coordsForKML = coordenadas.replace(/\s+/g, '');
+        }
+
+        kml += '<Placemark>\n';
+        kml += `<name>${etiqueta}</name>\n`;
+        kml += `<Point><coordinates>${coordsForKML}</coordinates></Point>\n`;
+        kml += '</Placemark>\n';
+    });
+
+    kml += '</Document>\n</kml>';
+    return kml;
+}
+
+    async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!username || !password) {
+    alert('Por favor ingrese usuario y contraseña');
+    return;
+  }
+
+  try {
+    const { data: existingSession } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('sessionactiva', true)
+      .single();
+
+    if (existingSession) {
+      const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
+      if (!confirmar) return;
+
+      await supabaseClient
+        .from('usuarios')
+        .update({ sessionactiva: false, sessiontoken: null })
+        .eq('usuario', username);
+    }
+
+    const { data, error } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('password', password)
+      .eq('activo', true)
+      .single();
+
+    if (error || !data) {
+      alert('Usuario o contraseña incorrectos');
+      return;
+    }
+
+    const sessionToken = btoa(username + Date.now() + Math.random());
+
+    await supabaseClient
+      .from('usuarios')
+      .update({
+        sessionactiva: true,
+        sessiontoken: sessionToken,
+        ultimaconexion: new Date().toISOString()
+      })
+      .eq('id', data.id);
+
+    currentUser = { ...data, session_token: sessionToken };
+
+    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('tableSelectionSection').style.display = 'block';
+
+    iniciarVerificacionSesion();
+
+    // Guardar sesión para persistencia
+    guardarDatosOffline();
+
+    // Manejar visibilidad de la página
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && currentUser) {
+        renovarSesion();
+      }
+    });
+
+  } catch (err) {
+    console.error('Error de login:', err);
+    alert('Error de conexión');
+  }
+}
+
+function iniciarVerificacionSesion() {
+  setInterval(async () => {
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('sessionactiva, sessiontoken, ultimaconexion')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
+        if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
+          alert('Su sesión ha sido iniciada en otro dispositivo.');
+          logout();
+        }
         return;
       }
 
-      try {
-        const { data: existingSession } = await supabaseClient
-          .from('usuarios')
-          .select('*')
-          .eq('usuario', username)
-          .eq('sessionactiva', true)
-          .single();
+      const ultima = new Date(data.ultimaconexion);
+      const ahora = new Date();
+      const diffMin = (ahora - ultima) / 1000 / 60;
 
-        if (existingSession) {
-          const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
-          if (!confirmar) return;
-
-          await supabaseClient
-            .from('usuarios')
-            .update({ sessionactiva: false, sessiontoken: null })
-            .eq('usuario', username);
-        }
-
-        const { data, error } = await supabaseClient
-          .from('usuarios')
-          .select('*')
-          .eq('usuario', username)
-          .eq('password', password)
-          .eq('activo', true)
-          .single();
-
-        if (error || !data) {
-          alert('Usuario o contraseña incorrectos');
-          return;
-        }
-
-        const sessionToken = btoa(username + Date.now() + Math.random());
-
-        await supabaseClient
-          .from('usuarios')
-          .update({
-            sessionactiva: true,
-            sessiontoken: sessionToken,
-            ultimaconexion: new Date().toISOString()
-          })
-          .eq('id', data.id);
-
-        currentUser = { ...data, session_token: sessionToken };
-
-        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('tableSelectionSection').style.display = 'block';
-
-        iniciarVerificacionSesion();
-
-      } catch (err) {
-        console.error('Error de login:', err);
-        alert('Error de conexión');
+      if (diffMin > 45) {
+        alert('Su sesión ha expirado por inactividad.');
+        logout();
       }
+    } catch (err) {
+      console.error('Error verificando sesión:', err);
     }
+  }, 30000);
+}
 
-    function iniciarVerificacionSesion() {
-      setInterval(async () => {
-        if (!currentUser) return;
+async function renovarSesion() {
+  if (!currentUser) return;
+  await supabaseClient
+    .from('usuarios')
+    .update({ ultimaconexion: new Date().toISOString() })
+    .eq('id', currentUser.id);
+}
 
-        try {
-          const { data, error } = await supabaseClient
-            .from('usuarios')
-            .select('sessionactiva, sessiontoken, ultimaconexion')
-            .eq('id', currentUser.id)
-            .single();
+async function logout() {
+  sessionStorage.removeItem('cleса_user_session');
+  if (currentUser) {
+    await supabaseClient
+      .from('usuarios')
+      .update({ sessionactiva: false, sessiontoken: null })
+      .eq('id', currentUser.id);
+  }
 
-          if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
-            alert('Su sesión ha expirado o fue iniciada en otro dispositivo.');
-            logout();
-            return;
-          }
+  currentUser = null;
+  selectedTable = null;
 
-          const ultima = new Date(data.ultimaconexion);
-          const ahora = new Date();
-          const diffMin = (ahora - ultima) / 1000 / 60;
+  document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'none';
 
-          if (diffMin > 45) {
-            alert('Su sesión ha expirado por inactividad.');
-            logout();
-          }
-        } catch (err) {
-          console.error('Error verificando sesión:', err);
-        }
-      }, 30000); // cada 30 segundos
-    }
-
-    async function renovarSesion() {
-      if (!currentUser) return;
-      await supabaseClient
-        .from('usuarios')
-        .update({ ultimaconexion: new Date().toISOString() })
-        .eq('id', currentUser.id);
-    }
-
-    async function logout() {
-      if (currentUser) {
-        await supabaseClient
-          .from('usuarios')
-          .update({ sessionactiva: false, sessiontoken: null })
-          .eq('id', currentUser.id);
-      }
-
-      currentUser = null;
-      selectedTable = null;
-
-      document.getElementById('userInfo').classList.add('hidden');
-      document.getElementById('loginSection').style.display = 'block';
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('searchSection').style.display = 'none';
-
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('searchResults').innerHTML = '';
-    }
-
-    function seleccionarTabla(tableName) {
-      selectedTable = tableName;
-      const config = tableConfigs[tableName];
-      document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
-      generarCamposBusqueda(config);
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('searchSection').style.display = 'block';
-    }
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
 
     function generarCamposBusqueda(config) {
       const searchGrid = document.getElementById('searchGrid');
@@ -1099,7 +1255,8 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         });
         
         html += '<div class="action-buttons">';
-        
+
+            
         config.actions.forEach(action => {
           const val = item[action];
           if (!val) return;
@@ -1113,9 +1270,9 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
             } else if (action === 'FotoLink') {
               html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            } else if (action === 'Grafica') {
-              html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
-            }
+            } else if (action === 'Grafica' && currentUser.rol !== 'Contratista') {
+  html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
+}
           
           } else if (selectedTable === 'TX y Cortes') {
             // Para tabla TX y Cortes - solo "Ver Ubicación"
@@ -1140,6 +1297,18 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         
         html += '</div></div>';
       });
+
+// Verificar si hay coordenadas válidas antes de mostrar el botón KML
+const tieneCoordenadasValidas = resultados.some(item => {
+  const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+  return coordenadas && coordenadas.includes(',');
+});
+
+if (tieneCoordenadasValidas) {
+  html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
+  html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
+  html += '</div>';
+}
       
       container.innerHTML = html;
     }
@@ -1152,6 +1321,67 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
       if (link) window.open(link, '_blank');
     }
 
+function seleccionarTabla(tableName) {
+  selectedTable = tableName;
+  const config = tableConfigs[tableName];
+  document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
+  generarCamposBusqueda(config);
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'block';
+}
+
   </script>
+
+<script>
+
+// Cache datos importantes en localStorage (solo para datos de sesión)
+function guardarDatosOffline() {
+    if (currentUser) {
+        sessionStorage.setItem('cleса_user_session', JSON.stringify({
+            user: currentUser,
+            timestamp: Date.now()
+        }));
+    }
+}
+
+// Verificar datos offline al cargar
+function verificarDatosOffline() {
+    const sessionData = sessionStorage.getItem('cleса_user_session');
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
+        
+        if (tiempoTranscurrido < 45) { // 45 minutos
+            currentUser = data.user;
+            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('tableSelectionSection').style.display = 'block';
+            return true;
+        }
+    }
+    return false;
+}
+
+// Inicializar al cargar la página
+window.addEventListener('load', function() {
+    // Registro del Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    }
+    
+    // Verificar sesión offline
+    if (!verificarDatosOffline()) {
+        document.getElementById('loginSection').style.display = 'block';
+    }
+});
+</script>
 </body>
 </html>
+
