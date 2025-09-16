@@ -464,6 +464,12 @@
         font-size: 14px;
         line-height: 1.7;
         padding: 5px 0;
+
+        /* Botón KML responsive */
+.btn-secondary {
+    font-size: 14px !important;
+    padding: 10px 15px !important;
+}
     }
 }
     </style>
@@ -1229,9 +1235,17 @@ function generarKMLString(ubicaciones) {
         html += '</div></div>';
       });
 
-html += '<div style="margin-top: 20px; text-align: center;">';
-html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 300px;">📥 Descargar KML de todos los resultados</button>';
-html += '</div>';
+// Verificar si hay coordenadas válidas antes de mostrar el botón KML
+const tieneCoordenadasValidas = resultados.some(item => {
+  const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+  return coordenadas && coordenadas.includes(',');
+});
+
+if (tieneCoordenadasValidas) {
+  html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
+  html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
+  html += '</div>';
+}
       
       container.innerHTML = html;
     }
@@ -1247,6 +1261,7 @@ html += '</div>';
   </script>
 </body>
 </html>
+
 
 
 
