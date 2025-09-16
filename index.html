@@ -1159,6 +1159,36 @@ function iniciarVerificacionSesion() {
   }, 30000);
 }
 
+async function renovarSesion() {
+  if (!currentUser) return;
+  await supabaseClient
+    .from('usuarios')
+    .update({ ultimaconexion: new Date().toISOString() })
+    .eq('id', currentUser.id);
+}
+
+async function logout() {
+  sessionStorage.removeItem('cleса_user_session');
+  if (currentUser) {
+    await supabaseClient
+      .from('usuarios')
+      .update({ sessionactiva: false, sessiontoken: null })
+      .eq('id', currentUser.id);
+  }
+
+  currentUser = null;
+  selectedTable = null;
+
+  document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'none';
+
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
+
     function generarCamposBusqueda(config) {
       const searchGrid = document.getElementById('searchGrid');
       let html = '';
@@ -1288,20 +1318,18 @@ if (tieneCoordenadasValidas) {
       if (link) window.open(link, '_blank');
     }
 
-  </script>
-<script>
-// Registro del Service Worker para funcionalidad offline
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('SW registrado');
-            })
-            .catch(function(registrationError) {
-                console.log('Error SW:', registrationError);
-            });
-    });
+function seleccionarTabla(tableName) {
+  selectedTable = tableName;
+  const config = tableConfigs[tableName];
+  document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
+  generarCamposBusqueda(config);
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'block';
 }
+
+  </script>
+
+<script>
 
 // Cache datos importantes en localStorage (solo para datos de sesión)
 function guardarDatosOffline() {
@@ -1334,16 +1362,27 @@ function verificarDatosOffline() {
 
 // Inicializar al cargar la página
 window.addEventListener('load', function() {
+    // Registro del Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    }
+    
+    // Verificar sesión offline
     if (!verificarDatosOffline()) {
-        // Mostrar login si no hay sesión válida
         document.getElementById('loginSection').style.display = 'block';
     }
 });
 </script>
 </body>
 </html>
-</body>
-</html>
+
+
 
 
 
