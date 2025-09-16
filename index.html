@@ -409,38 +409,63 @@
             position: relative;
             height: 400px;
         }
-
+        
         /* Responsive */
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-            .table-selector {
-                grid-template-columns: 1fr;
-            }
-            .action-buttons {
-                flex-direction: column;
-            }
-            .btn-secondary, .btn-danger {
-                width: 100%;
-                margin: 5px 0;
-            }
-            .modal-content {
-                width: 95%;
-                margin: 5% auto;
-                padding: 15px;
-            }
-            .chart-container {
-                height: 300px;
-            }
-            .user-info {
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-bottom: 20px;
-                justify-content: center;
-            }
-        }
+@media (max-width: 768px) {
+    .search-grid {
+        grid-template-columns: 1fr;
+    }
+    .table-selector {
+        grid-template-columns: 1fr;
+    }
+    .action-buttons {
+        flex-direction: column;
+    }
+    .btn-secondary, .btn-danger {
+        width: 100%;
+        margin: 5px 0;
+    }
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        padding: 15px;
+    }
+    .chart-container {
+        height: 300px;
+    }
+    .user-info {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
+    
+    /* Mejoras para comentarios en móvil */
+    .result-item {
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 2px solid #e2e8f0;
+        line-height: 1.6;
+    }
+    
+    .result-item strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #2d3748;
+    }
+    
+    .result-item:not(:has(strong)):after {
+        content: "";
+        display: block;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.7;
+        padding: 5px 0;
+    }
+}
     </style>
 </head>
 <body>
@@ -901,6 +926,68 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         if (event.target === modal) cerrarGraficas();
     }
 
+    // Funciones para descarga KML
+function descargarKML() {
+    if (consultasData.length === 0) {
+        alert('No hay datos para descargar');
+        return;
+    }
+
+    const ubicaciones = [];
+    consultasData.forEach((item, index) => {
+        const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+        if (coordenadas) {
+            const etiqueta = item.NombreCliente || item.CuentaContrato || item.Medidor || `Punto ${index + 1}`;
+            ubicaciones.push({ etiqueta, coordenadas });
+        }
+    });
+
+    if (ubicaciones.length === 0) {
+        alert('No se encontraron coordenadas válidas para descargar');
+        return;
+    }
+
+    const kmlString = generarKMLString(ubicaciones);
+    const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coordenadas_${selectedTable}_${new Date().getTime()}.kml`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function generarKMLString(ubicaciones) {
+    if (!Array.isArray(ubicaciones) || ubicaciones.length === 0) {
+        throw new Error("No se enviaron ubicaciones válidas para el KML.");
+    }
+    
+    let kml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n';
+    kml += '<name>Coordenadas de búsqueda CLESA</name>\n';
+
+    ubicaciones.forEach(({ etiqueta, coordenadas }) => {
+        const parts = coordenadas.split(',').map(s => s.trim());
+        let coordsForKML;
+        if (parts.length >= 2) {
+            coordsForKML = `${parts[1]},${parts[0]}`;
+            if (parts.length === 3) {
+                coordsForKML += `,${parts[2]}`;
+            }
+        } else {
+            coordsForKML = coordenadas.replace(/\s+/g, '');
+        }
+
+        kml += '<Placemark>\n';
+        kml += `<name>${etiqueta}</name>\n`;
+        kml += `<Point><coordinates>${coordsForKML}</coordinates></Point>\n`;
+        kml += '</Placemark>\n';
+    });
+
+    kml += '</Document>\n</kml>';
+    return kml;
+}
+
     async function login() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -1099,7 +1186,8 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         });
         
         html += '<div class="action-buttons">';
-        
+
+            
         config.actions.forEach(action => {
           const val = item[action];
           if (!val) return;
@@ -1113,9 +1201,9 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
               html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
             } else if (action === 'FotoLink') {
               html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            } else if (action === 'Grafica') {
-              html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
-            }
+            } else if (action === 'Grafica' && currentUser.rol !== 'Contratista') {
+  html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
+}
           
           } else if (selectedTable === 'TX y Cortes') {
             // Para tabla TX y Cortes - solo "Ver Ubicación"
@@ -1140,6 +1228,10 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
         
         html += '</div></div>';
       });
+
+html += '<div style="margin-top: 20px; text-align: center;">';
+html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 300px;">📥 Descargar KML de todos los resultados</button>';
+html += '</div>';
       
       container.innerHTML = html;
     }
@@ -1155,6 +1247,7 @@ function verGraficas(graficaData, nombreCliente, cuentaContrato) {
   </script>
 </body>
 </html>
+
 
 
 
