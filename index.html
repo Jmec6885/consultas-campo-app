@@ -1331,56 +1331,11 @@ function seleccionarTabla(tableName) {
 
 <script>
 
-// Cache datos importantes en localStorage (solo para datos de sesión)
-function guardarDatosOffline() {
-    if (currentUser) {
-        sessionStorage.setItem('cleса_user_session', JSON.stringify({
-            user: currentUser,
-            timestamp: Date.now()
-        }));
-    }
-}
 
-// Verificar datos offline al cargar
-function verificarDatosOffline() {
-    const sessionData = sessionStorage.getItem('cleса_user_session');
-    if (sessionData) {
-        const data = JSON.parse(sessionData);
-        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
-        
-        if (tiempoTranscurrido < 45) { // 45 minutos
-            currentUser = data.user;
-            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
-            document.getElementById('userInfo').classList.remove('hidden');
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('tableSelectionSection').style.display = 'block';
-            return true;
-        }
-    }
-    return false;
-}
-
-// Inicializar al cargar la página
-window.addEventListener('load', function() {
-    // Registro del Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('SW registrado');
-            })
-            .catch(function(registrationError) {
-                console.log('Error SW:', registrationError);
-            });
-    }
-    
-    // Verificar sesión offline
-    if (!verificarDatosOffline()) {
-        document.getElementById('loginSection').style.display = 'block';
-    }
-});
 </script>
 </body>
 </html>
+
 
 
 
