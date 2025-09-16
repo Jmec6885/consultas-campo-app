@@ -1051,155 +1051,113 @@ function generarKMLString(ubicaciones) {
 }
 
     async function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
 
-      if (!username || !password) {
-        alert('Por favor ingrese usuario y contraseña');
+  if (!username || !password) {
+    alert('Por favor ingrese usuario y contraseña');
+    return;
+  }
+
+  try {
+    const { data: existingSession } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('sessionactiva', true)
+      .single();
+
+    if (existingSession) {
+      const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
+      if (!confirmar) return;
+
+      await supabaseClient
+        .from('usuarios')
+        .update({ sessionactiva: false, sessiontoken: null })
+        .eq('usuario', username);
+    }
+
+    const { data, error } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('password', password)
+      .eq('activo', true)
+      .single();
+
+    if (error || !data) {
+      alert('Usuario o contraseña incorrectos');
+      return;
+    }
+
+    const sessionToken = btoa(username + Date.now() + Math.random());
+
+    await supabaseClient
+      .from('usuarios')
+      .update({
+        sessionactiva: true,
+        sessiontoken: sessionToken,
+        ultimaconexion: new Date().toISOString()
+      })
+      .eq('id', data.id);
+
+    currentUser = { ...data, session_token: sessionToken };
+
+    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('tableSelectionSection').style.display = 'block';
+
+    iniciarVerificacionSesion();
+
+    // Guardar sesión para persistencia
+    guardarDatosOffline();
+
+    // Manejar visibilidad de la página
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && currentUser) {
+        renovarSesion();
+      }
+    });
+
+  } catch (err) {
+    console.error('Error de login:', err);
+    alert('Error de conexión');
+  }
+}
+
+function iniciarVerificacionSesion() {
+  setInterval(async () => {
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('sessionactiva, sessiontoken, ultimaconexion')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
+        if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
+          alert('Su sesión ha sido iniciada en otro dispositivo.');
+          logout();
+        }
         return;
       }
 
-      try {
-        const { data: existingSession } = await supabaseClient
-          .from('usuarios')
-          .select('*')
-          .eq('usuario', username)
-          .eq('sessionactiva', true)
-          .single();
+      const ultima = new Date(data.ultimaconexion);
+      const ahora = new Date();
+      const diffMin = (ahora - ultima) / 1000 / 60;
 
-        if (existingSession) {
-          const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
-          if (!confirmar) return;
-
-          await supabaseClient
-            .from('usuarios')
-            .update({ sessionactiva: false, sessiontoken: null })
-            .eq('usuario', username);
-        }
-
-        const { data, error } = await supabaseClient
-          .from('usuarios')
-          .select('*')
-          .eq('usuario', username)
-          .eq('password', password)
-          .eq('activo', true)
-          .single();
-
-        if (error || !data) {
-          alert('Usuario o contraseña incorrectos');
-          return;
-        }
-
-        const sessionToken = btoa(username + Date.now() + Math.random());
-
-        await supabaseClient
-          .from('usuarios')
-          .update({
-            sessionactiva: true,
-            sessiontoken: sessionToken,
-            ultimaconexion: new Date().toISOString()
-          })
-          .eq('id', data.id);
-
-        currentUser = { ...data, session_token: sessionToken };
-
-        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('tableSelectionSection').style.display = 'block';
-
-        iniciarVerificacionSesion();
-
-      } catch (err) {
-        console.error('Error de login:', err);
-        alert('Error de conexión');
-      }
-    }
-
-    function iniciarVerificacionSesion() {
-      setInterval(async () => {
-        if (!currentUser) return;
-
-        try {
-          const { data, error } = await supabaseClient
-            .from('usuarios')
-            .select('sessionactiva, sessiontoken, ultimaconexion')
-            .eq('id', currentUser.id)
-            .single();
-
-          if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
-    // Solo hacer logout si realmente hay conflicto de sesión
-    if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
-        alert('Su sesión ha sido iniciada en otro dispositivo.');
+      if (diffMin > 45) {
+        alert('Su sesión ha expirado por inactividad.');
         logout();
-    }
-    return;
-}
-
-          const ultima = new Date(data.ultimaconexion);
-          const ahora = new Date();
-          const diffMin = (ahora - ultima) / 1000 / 60;
-
-          if (diffMin > 45) {
-            alert('Su sesión ha expirado por inactividad.');
-            logout();
-          }
-        } catch (err) {
-          console.error('Error verificando sesión:', err);
-        }
-      }, 30000); // cada 30 segundos
-    }
-
-// Guardar sesión para persistencia
-guardarDatosOffline();
-
-// Manejar visibilidad de la página
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden && currentUser) {
-        // Al regresar a la app, renovar sesión sin hacer logout
-        renovarSesion();
-    }
-})
-
-    async function renovarSesion() {
-      if (!currentUser) return;
-      await supabaseClient
-        .from('usuarios')
-        .update({ ultimaconexion: new Date().toISOString() })
-        .eq('id', currentUser.id);
-    }
-
-    async function logout() {
-// Limpiar datos de sesión
-sessionStorage.removeItem('cleса_user_session');     
- if (currentUser) {
-        await supabaseClient
-          .from('usuarios')
-          .update({ sessionactiva: false, sessiontoken: null })
-          .eq('id', currentUser.id);
       }
-
-      currentUser = null;
-      selectedTable = null;
-
-      document.getElementById('userInfo').classList.add('hidden');
-      document.getElementById('loginSection').style.display = 'block';
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('searchSection').style.display = 'none';
-
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('searchResults').innerHTML = '';
+    } catch (err) {
+      console.error('Error verificando sesión:', err);
     }
-
-    function seleccionarTabla(tableName) {
-      selectedTable = tableName;
-      const config = tableConfigs[tableName];
-      document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
-      generarCamposBusqueda(config);
-      document.getElementById('tableSelectionSection').style.display = 'none';
-      document.getElementById('searchSection').style.display = 'block';
-    }
+  }, 30000);
+}
 
     function generarCamposBusqueda(config) {
       const searchGrid = document.getElementById('searchGrid');
@@ -1386,6 +1344,7 @@ window.addEventListener('load', function() {
 </html>
 </body>
 </html>
+
 
 
 
