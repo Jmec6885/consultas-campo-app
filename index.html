@@ -472,6 +472,56 @@
 }
     }
 }
+
+// Registro del Service Worker para funcionalidad offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    });
+}
+
+// Cache datos importantes en localStorage (solo para datos de sesión)
+function guardarDatosOffline() {
+    if (currentUser) {
+        sessionStorage.setItem('cleса_user_session', JSON.stringify({
+            user: currentUser,
+            timestamp: Date.now()
+        }));
+    }
+}
+
+// Verificar datos offline al cargar
+function verificarDatosOffline() {
+    const sessionData = sessionStorage.getItem('cleса_user_session');
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
+        
+        if (tiempoTranscurrido < 45) { // 45 minutos
+            currentUser = data.user;
+            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('tableSelectionSection').style.display = 'block';
+            return true;
+        }
+    }
+    return false;
+}
+
+// Inicializar al cargar la página
+window.addEventListener('load', function() {
+    if (!verificarDatosOffline()) {
+        // Mostrar login si no hay sesión válida
+        document.getElementById('loginSection').style.display = 'block';
+    }
+});
     </style>
 </head>
 <body>
@@ -567,6 +617,8 @@
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="procesarArchivos()">📊 Procesar Archivos</button>
                     <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Datos</button>
+
+
                 </div>
             </div>
         </div>
@@ -588,11 +640,15 @@
                     <div class="chart-title">📈 Historial de Lecturas</div>
                     <div class="chart-container">
                         <canvas id="lecturasChart"></canvas>
+
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+
 
   <script>
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
@@ -1072,10 +1128,13 @@ function generarKMLString(ubicaciones) {
             .single();
 
           if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
-            alert('Su sesión ha expirado o fue iniciada en otro dispositivo.');
-            logout();
-            return;
-          }
+    // Solo hacer logout si realmente hay conflicto de sesión
+    if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
+        alert('Su sesión ha sido iniciada en otro dispositivo.');
+        logout();
+    }
+    return;
+}
 
           const ultima = new Date(data.ultimaconexion);
           const ahora = new Date();
@@ -1091,6 +1150,17 @@ function generarKMLString(ubicaciones) {
       }, 30000); // cada 30 segundos
     }
 
+// Guardar sesión para persistencia
+guardarDatosOffline();
+
+// Manejar visibilidad de la página
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && currentUser) {
+        // Al regresar a la app, renovar sesión sin hacer logout
+        renovarSesion();
+    }
+})
+
     async function renovarSesion() {
       if (!currentUser) return;
       await supabaseClient
@@ -1100,7 +1170,9 @@ function generarKMLString(ubicaciones) {
     }
 
     async function logout() {
-      if (currentUser) {
+// Limpiar datos de sesión
+sessionStorage.removeItem('cleса_user_session');     
+ if (currentUser) {
         await supabaseClient
           .from('usuarios')
           .update({ sessionactiva: false, sessiontoken: null })
@@ -1259,8 +1331,62 @@ if (tieneCoordenadasValidas) {
     }
 
   </script>
+<script>
+// Registro del Service Worker para funcionalidad offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    });
+}
+
+// Cache datos importantes en localStorage (solo para datos de sesión)
+function guardarDatosOffline() {
+    if (currentUser) {
+        sessionStorage.setItem('cleса_user_session', JSON.stringify({
+            user: currentUser,
+            timestamp: Date.now()
+        }));
+    }
+}
+
+// Verificar datos offline al cargar
+function verificarDatosOffline() {
+    const sessionData = sessionStorage.getItem('cleса_user_session');
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
+        
+        if (tiempoTranscurrido < 45) { // 45 minutos
+            currentUser = data.user;
+            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('tableSelectionSection').style.display = 'block';
+            return true;
+        }
+    }
+    return false;
+}
+
+// Inicializar al cargar la página
+window.addEventListener('load', function() {
+    if (!verificarDatosOffline()) {
+        // Mostrar login si no hay sesión válida
+        document.getElementById('loginSection').style.display = 'block';
+    }
+});
+</script>
 </body>
 </html>
+</body>
+</html>
+
 
 
 
