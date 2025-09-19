@@ -1248,8 +1248,40 @@ async function logout() {
       resultados.forEach((item, index) => {
         html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
         config.resultFields.forEach(field => {
-          html += `<div><strong>${field}:</strong> ${item[field] || 'N/A'}</div>`;
-        });
+  let valor = item[field] || 'N/A';
+  
+  // Formatear especialmente el campo Comentario
+  if (field === 'Comentario' && valor !== 'N/A') {
+    // Reemplazar patrones comunes para mejorar legibilidad
+    valor = valor
+      .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>') // *texto* -> negrita con salto
+      .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
+      .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
+      .replace(/Medidor según SAP/g, '<br><strong>Medidor según SAP:</strong>')
+      .replace(/Cantidad OS/g, '<br><strong>Cantidad OS:</strong>')
+      .replace(/Comentario Generacion/g, '<br><strong>Comentario Generación:</strong>')
+      .replace(/Comentario Incumplida o Adicional/g, '<br><strong>Comentario Incumplida o Adicional:</strong>')
+      .replace(/Comentario de Visita Fallida/g, '<br><strong>Comentario de Visita Fallida:</strong>')
+      .replace(/Comentario de visita Anterior/g, '<br><strong>Comentario de visita Anterior:</strong>')
+      .replace(/Foto Medidor o Suministr/g, '<br><strong>Foto Medidor o Suministro:</strong>')
+      .replace(/Coordenas Contiguo Previa/g, '<br><strong>Coordenadas Contiguo Previa:</strong>')
+      .replace(/Coordenadas Visita Anterior/g, '<br><strong>Coordenadas Visita Anterior:</strong>')
+      .replace(/Coordeadas lector/g, '<br><strong>Coordenadas lector:</strong>')
+      .replace(/Coordenadas de OS según ATOMO/g, '<br><strong>Coordenadas de OS según ATOMO:</strong>')
+      .replace(/Fecha Eje\. OS anterior/g, '<br><strong>Fecha Eje. OS anterior:</strong>')
+      .replace(/Unidad que Eje\. OS Anterior/g, '<br><strong>Unidad que Eje. OS Anterior:</strong>')
+      .replace(/Dias (\d+)/g, '<br><strong>Días:</strong> $1')
+      .replace(/lectura[:\s]*(\d+)/gi, '<br><strong>Lectura:</strong> $1')
+      .replace(/Sin Datos/g, '<br><em>Sin Datos</em>')
+      .replace(/Sin Comentario/g, '<br><em>Sin Comentario</em>')
+      .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
+      .replace(/Sin Foto/g, '<br><em>Sin Foto</em>');
+    
+    html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
+  } else {
+    html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+  }
+});
         
         html += '<div class="action-buttons">';
 
@@ -1381,5 +1413,6 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
