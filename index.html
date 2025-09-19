@@ -410,20 +410,63 @@
             height: 400px;
         }
         
-        /* Responsive */
-@media (max-width: 768px) {
+       @media (max-width: 768px) {
+    /* Reducir padding del body y container */
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        max-width: 100%;
+        padding: 5px;
+    }
+    
+    /* Hacer las tarjetas más anchas y con menos padding */
+    .card {
+        padding: 20px 15px;
+        margin-bottom: 15px;
+        border-radius: 15px;
+    }
+    
+    /* Ajustar cuadros de resultados */
+    .result-card {
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 10px;
+    }
+    
+    /* Mejorar el espacio de los elementos de resultado */
+    .result-item {
+        margin-bottom: 15px;
+        padding: 8px 0;
+        border-bottom: 2px solid #e2e8f0;
+        line-height: 1.6;
+    }
+    
+    .result-item strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #2d3748;
+    }
+    
+    /* Ajustes para otros elementos */
     .search-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     .table-selector {
         grid-template-columns: 1fr;
     }
     .action-buttons {
         flex-direction: column;
+        gap: 8px;
     }
     .btn-secondary, .btn-danger {
         width: 100%;
-        margin: 5px 0;
+        margin: 0;
+        font-size: 14px !important;
+        padding: 10px 15px !important;
     }
     .modal-content {
         width: 95%;
@@ -437,41 +480,31 @@
         position: relative;
         top: auto;
         right: auto;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         justify-content: center;
     }
     
-    /* Mejoras para comentarios en móvil */
-    .result-item {
-        margin-bottom: 15px;
-        padding: 10px 0;
-        border-bottom: 2px solid #e2e8f0;
-        line-height: 1.6;
+    /* Hacer los títulos más pequeños en móvil */
+    .titulo-degradado {
+        font-size: 2rem;
     }
     
-    .result-item strong {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #2d3748;
-    }
-    
-    .result-item:not(:has(strong)):after {
-        content: "";
-        display: block;
-        word-wrap: break-word;
-        white-space: pre-wrap;
-        font-size: 14px;
-        line-height: 1.7;
-        padding: 5px 0;
+    /* Mejorar legibilidad de enlaces */
+    .result-item a {
+        display: inline-block;
+        margin: 5px 0;
+        padding: 8px 12px;
+        background: #f0f9ff;
+        border-radius: 8px;
+        border: 1px solid #3b54d3;
 
-        /* Botón KML responsive */
+   }
 .btn-secondary {
     font-size: 14px !important;
     padding: 10px 15px !important;
 }
-    }
 }
+
 
 // Registro del Service Worker para funcionalidad offline
 if ('serviceWorker' in navigator) {
@@ -1426,6 +1459,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
