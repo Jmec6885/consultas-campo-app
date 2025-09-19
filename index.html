@@ -1275,7 +1275,20 @@ async function logout() {
       .replace(/Sin Datos/g, '<br><em>Sin Datos</em>')
       .replace(/Sin Comentario/g, '<br><em>Sin Comentario</em>')
       .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
-      .replace(/Sin Foto/g, '<br><em>Sin Foto</em>');
+      .replace(/Sin Foto/g, '<br><em>Sin Foto</em>')
+    .replace(/Nombre del Cliente/g, '<br><strong>Nombre del Cliente:</strong>')
+    .replace(/Cuenta contrato/g, '<br><strong>Cuenta contrato:</strong>')
+    .replace(/Dirección del cliente/g, '<br><strong>Dirección del cliente:</strong>')
+    .replace(/Medidor (\d+)/g, '<br><strong>Medidor:</strong> $1')
+    .replace(/Numero de OS/g, '<br><strong>Número de OS:</strong>')
+    .replace(/Tipologia/g, '<br><strong>Tipología:</strong>')
+    .replace(/Comentario de Cierre/g, '<br><strong>Comentario de Cierre:</strong>')
+    .replace(/coordenadas del suministro/g, '<br><strong>Coordenadas del suministro:</strong>')
+    .replace(/Comentario de Generacion/g, '<br><strong>Comentario de Generación:</strong>')
+    .replace(/Coordenadas De cierre/g, '<br><strong>Coordenadas De cierre:</strong>')
+    .replace(/Fecha Ejec/g, '<br><strong>Fecha Ejec:</strong>')
+    .replace(/Ejecutada por/g, '<br><strong>Ejecutada por:</strong>')
+    .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
     
     html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
   } else {
@@ -1413,6 +1426,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
