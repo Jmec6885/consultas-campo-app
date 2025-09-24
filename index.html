@@ -1342,6 +1342,21 @@ async function logout() {
         .replace(/Tarifa/g, '<br><em>Tarifa</em>')
         .replace(/Medidor/g, '<br><em>Medidor</em>')
         .replace(/Fecha Lect/g, '<br><em>Fecha Lect</em>')
+        .replace(/Proteccion que lo Alimenta/g, '<br><em>Proteccion que lo Alimenta</em>')
+        .replace(/Propiedad/g, '<br><em>Propiedad</em>')
+        .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+        .replace(/Capacidad Sum/g, '<br><em>Capacidad Sum</em>')
+        .replace(/Circuito/g, '<br><em>Circuito</em>')
+        .replace(/Uicacion/g, '<br><em>Uicacion</em>')
+        .replace(/Cantidad de clientes/g, '<br><em>Cantidad de clientes</em>')
+        .replace(/Estructura Tx/g, '<br><em>Estructura Tx</em>')
+        .replace(/Primary Phase ConcatSet/g, '<br><em>Primary Phase ConcatSet</em>')
+        .replace(/Usos/g, '<br><em>Usos</em>')
+        .replace(/Voltaje/g, '<br><em>Voltaje</em>')
+        .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+        .replace(/Estructura/g, '<br><em>Estructura</em>')
+        .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
+        .replace(/Municipio/g, '<br><em>Municipio</em>')
     .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
     
     html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
@@ -1784,5 +1799,6 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
