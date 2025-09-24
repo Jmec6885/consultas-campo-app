@@ -1245,24 +1245,40 @@ async function logout() {
     }
 
     async function buscar(campo, tipo) {
-      await renovarSesion();
-      const valor = document.getElementById(`search${campo}`).value.trim();
-      if (!valor) {
-        alert(`Por favor ingrese un valor para ${campo}`);
-        return;
-      }
+  await renovarSesion();
+  await capturarCoordendasGPS();
+  
+  const valor = document.getElementById(`search${campo}`).value.trim();
+  if (!valor) {
+    alert(`Por favor ingrese un valor para ${campo}`);
+    return;
+  }
 
-      let query = supabaseClient.from(selectedTable).select('*');
-      if (tipo === 'exact') query = query.eq(campo, valor);
-      else query = query.ilike(campo, `%${valor}%`);
+  const valores = valor.includes(',') ? valor.split(',').map(v => v.trim()).filter(v => v) : [valor];
+  
+  if (valores.length > 1) {
+    await busquedaMultipleKML(campo, valores);
+  } else {
+    // Búsqueda principal inmediata
+    let query = supabaseClient.from(selectedTable).select('*');
+    if (tipo === 'exact') query = query.eq(campo, valor);
+    else query = query.ilike(campo, `%${valor}%`);
 
-      const { data, error } = await query;
-      if (error) {
-        alert('Error al buscar: ' + error.message);
-        return;
-      }
-      mostrarResultados(data || []);
+    const { data, error } = await query;
+    if (error) {
+      alert('Error al buscar: ' + error.message);
+      return;
     }
+    
+    // Mostrar resultados principales inmediatamente
+    mostrarResultados(data || []);
+    
+    // Si estamos en consultas_servicios, iniciar búsqueda adicional
+    if (selectedTable === 'consultas_servicios') {
+      busquedaAdicionalProgresiva(campo, valor);
+    }
+  }
+}
 
     function mostrarResultados(resultados) {
       const container = document.getElementById('searchResults');
@@ -1396,6 +1412,304 @@ if (tieneCoordenadasValidas) {
       if (link) window.open(link, '_blank');
     }
 
+      async function busquedaAdicionalProgresiva(campo, valor) {
+  // Mostrar indicador de búsqueda adicional
+  mostrarIndicadorBusquedaAdicional();
+  
+  const tablasAdicionales = ['OS Pendientes', 'OSCerradas'];
+  const resultadosAdicionales = {};
+  
+  try {
+    // Buscar en cada tabla
+    for (const tabla of tablasAdicionales) {
+      const config = tableConfigs[tabla];
+      if (!config) continue;
+      
+      const campoEquivalente = encontrarCampoEquivalente(campo, config);
+      if (!campoEquivalente) continue;
+      
+      let query = supabaseClient.from(tabla).select('*');
+      query = query.eq(campoEquivalente, valor);
+      
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        resultadosAdicionales[tabla] = data;
+      }
+    }
+    
+    // Actualizar interfaz con resultados
+    actualizarConResultadosAdicionales(resultadosAdicionales);
+    
+  } catch (error) {
+    console.error('Error en búsqueda adicional:', error);
+    ocultarIndicadorBusquedaAdicional();
+  }
+}
+
+
+function mostrarIndicadorBusquedaAdicional() {
+  const container = document.getElementById('searchResults');
+  const indicador = `
+    <div id="indicadorBusquedaAdicional" class="result-card" style="background: #f0f9ff; border: 2px solid #3b54d3; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <div class="loading" style="display: block;"></div>
+        <span>Buscando en otras tablas...</span>
+      </div>
+      <div style="margin-top: 10px; font-size: 14px; color: #666;">
+        <div>⏳ OS Pendientes...</div>
+        <div>⏳ OS Cerradas...</div>
+      </div>
+    </div>
+  `;
+  container.innerHTML += indicador;
+}
+
+function ocultarIndicadorBusquedaAdicional() {
+  const indicador = document.getElementById('indicadorBusquedaAdicional');
+  if (indicador) indicador.remove();
+}
+
+function actualizarConResultadosAdicionales(resultadosAdicionales) {
+  ocultarIndicadorBusquedaAdicional();
+  
+  if (Object.keys(resultadosAdicionales).length > 0) {
+    const container = document.getElementById('searchResults');
+    let botonesHtml = `
+      <div class="result-card" style="background: #f0fff4; border: 2px solid #22c55e;">
+        <div class="result-header">✅ Información adicional encontrada</div>
+        <p>Se encontró información relacionada:</p>
+        <div class="action-buttons">
+    `;
+    
+    for (const [tabla, datos] of Object.entries(resultadosAdicionales)) {
+      const config = tableConfigs[tabla];
+      const icono = config ? config.icon : '📋';
+      botonesHtml += `
+        <button class="btn btn-secondary" onclick="mostrarResultadosAdicionales('${tabla}')">
+          ${icono} Ver ${config.title} (${datos.length})
+        </button>
+      `;
+    }
+    
+    botonesHtml += `</div></div>`;
+    container.innerHTML += botonesHtml;
+    
+    window.resultadosAdicionales = resultadosAdicionales;
+  }
+}
+
+function encontrarCampoEquivalente(campoOriginal, configTabla) {
+  const mapaCampos = {
+    'CuentaContrato': ['CuentaContrato'],
+    'Medidor': ['Medidor'],
+    'NombreCliente': ['NombreCliente']
+  };
+  
+  const posiblesCampos = mapaCampos[campoOriginal] || [campoOriginal];
+  
+  for (const field of configTabla.fields) {
+    if (posiblesCampos.includes(field.key)) {
+      return field.key;
+    }
+  }
+  return null;
+}
+
+function mostrarResultadosAdicionales(tabla) {
+  if (!window.resultadosAdicionales || !window.resultadosAdicionales[tabla]) {
+    alert('No hay datos disponibles');
+    return;
+  }
+  
+  const datos = window.resultadosAdicionales[tabla];
+  const config = tableConfigs[tabla];
+  
+  const tablaAnterior = selectedTable;
+  selectedTable = tabla;
+  
+  mostrarResultados(datos);
+  
+  const container = document.getElementById('searchResults');
+  const btnVolver = `
+    <div style="margin-top: 20px; text-align: center;">
+      <button class="btn btn-back" onclick="volverAResultadosPrincipales('${tablaAnterior}')">
+        ← Volver a Datos Suministros
+      </button>
+    </div>
+  `;
+  container.innerHTML += btnVolver;
+}
+
+function volverAResultadosPrincipales(tablaAnterior) {
+  selectedTable = tablaAnterior;
+  // Limpiar y permitir nueva búsqueda
+  document.getElementById('searchResults').innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+}
+
+
+async function busquedaMultipleKML(campo, valores) {
+  const resultadosEncontrados = [];
+  const noEncontrados = [];
+  
+  for (const valor of valores) {
+    let query = supabaseClient.from(selectedTable).select('*');
+    query = query.eq(campo, valor);
+    
+    const { data, error } = await query;
+    if (data && data.length > 0) {
+      resultadosEncontrados.push(...data);
+    } else {
+      noEncontrados.push(valor);
+    }
+  }
+  
+  // Guardar resultados para KML
+  window.resultadosKML = resultadosEncontrados;
+  
+  const container = document.getElementById('searchResults');
+  let html = `
+    <div class="result-card">
+      <div class="result-header">📍 Búsqueda Múltiple para KML</div>
+      <p><strong>Total buscados:</strong> ${valores.length}</p>
+      <p><strong>Encontrados:</strong> ${resultadosEncontrados.length}</p>
+      <p><strong>No encontrados:</strong> ${noEncontrados.length}</p>
+  `;
+  
+  if (noEncontrados.length > 0) {
+    html += `<p><strong>Valores no encontrados:</strong> ${noEncontrados.join(', ')}</p>`;
+  }
+  
+  html += `
+      <div class="action-buttons" style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="generarKMLMultiple()" id="btnGenerarKML">
+          🗺️ Generar KML
+        </button>
+        <button class="btn btn-secondary hidden" onclick="descargarKMLGenerado()" id="btnDescargarKML">
+          📥 Descargar KML
+        </button>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+
+
+async function generarKMLMultiple() {
+  const btnGenerar = document.getElementById('btnGenerarKML');
+  const btnDescargar = document.getElementById('btnDescargarKML');
+  
+  btnGenerar.innerHTML = '⏳ Generando KML...';
+  btnGenerar.disabled = true;
+  
+  try {
+    const ubicaciones = [];
+    
+    window.resultadosKML.forEach((item, index) => {
+      const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+      if (coordenadas && coordenadas.includes(',')) {
+        const etiqueta = item.NombreCliente || item.CuentaContrato || item.Medidor || `Punto ${index + 1}`;
+        ubicaciones.push({ etiqueta, coordenadas });
+      }
+    });
+    
+    if (ubicaciones.length === 0) {
+      alert('No se encontraron coordenadas válidas en los resultados');
+      btnGenerar.innerHTML = '🗺️ Generar KML';
+      btnGenerar.disabled = false;
+      return;
+    }
+    
+    // Simular procesamiento
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    window.kmlGenerado = generarKMLString(ubicaciones);
+    
+    btnGenerar.innerHTML = '✅ KML Generado';
+    btnDescargar.classList.remove('hidden');
+    
+    // Guardar coordenadas en BD del usuario
+    if (currentUser) {
+      const coordenadasTexto = ubicaciones.map(u => `${u.etiqueta}: ${u.coordenadas}`).join('\n');
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadasTexto,
+          ultimaconexion: new Date().toISOString()
+        })
+        .eq('id', currentUser.id);
+    }
+    
+  } catch (error) {
+    alert('Error generando KML: ' + error.message);
+    btnGenerar.innerHTML = '🗺️ Generar KML';
+    btnGenerar.disabled = false;
+  }
+}
+
+function descargarKMLGenerado() {
+  if (!window.kmlGenerado) {
+    alert('No hay KML generado para descargar');
+    return;
+  }
+  
+  const blob = new Blob([window.kmlGenerado], { type: 'application/vnd.google-earth.kml+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `busqueda_multiple_${selectedTable}_${new Date().getTime()}.kml`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+async function capturarCoordendasGPS() {
+  if (!navigator.geolocation) {
+    console.log('Geolocalización no disponible');
+    return;
+  }
+  
+  try {
+    const posicion = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
+    });
+    
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const coordenadas = `${lat},${lng}`;
+    const timestamp = new Date().toISOString();
+    
+    // Guardar en base de datos
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadas,
+          ultimaconexion: timestamp
+        })
+        .eq('id', currentUser.id);
+        
+      console.log(`GPS capturado: ${coordenadas}`);
+    }
+    
+  } catch (error) {
+    console.log('Error capturando GPS:', error.message);
+    // Actualizar solo última conexión si no se puede obtener GPS
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ ultimaconexion: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+  }
+}
+
+
 function seleccionarTabla(tableName) {
   selectedTable = tableName;
   const config = tableConfigs[tableName];
@@ -1459,6 +1773,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
