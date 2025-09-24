@@ -588,7 +588,7 @@ window.addEventListener('load', function() {
         </div>
 
         <!-- Sección de Selección de Tablas -->
-        <div class="table-selection-section" id="tableSelectionSection">
+        <div class="table-selector" id="tableSelectorContainer">
             <div class="card">
                 <h2>Seleccione el Módulo de Consulta</h2>
                 <p class="subtitulo">Elija el tipo de información que desea consultar</p>
@@ -1085,6 +1085,7 @@ function generarKMLString(ubicaciones) {
 
     async function login() {
   const username = document.getElementById('username').value.trim();
+  generarOpcionesSegunRol();
   const password = document.getElementById('password').value.trim();
 
   if (!username || !password) {
@@ -1157,6 +1158,47 @@ function generarKMLString(ubicaciones) {
     console.error('Error de login:', err);
     alert('Error de conexión');
   }
+}
+
+      function generarOpcionesSegunRol() {
+    const userRole = currentUser?.rol || '';
+    const container = document.getElementById('tableSelectorContainer');
+    
+    let opcionesHTML = '';
+    
+    // Consultas de Servicios - Todos los roles
+    opcionesHTML += `
+        <div class="table-option" onclick="seleccionarTabla('consultas_servicios')">
+            <span class="table-icon">🏠</span>
+            <div class="table-title">Consultas de Servicios</div>
+            <div class="table-description">Información general de servicios y clientes</div>
+        </div>
+    `;
+    
+    // Otras opciones solo para roles que NO sean 'lectura'
+    if (userRole !== 'lectura') {
+        opcionesHTML += `
+            <div class="table-option" onclick="seleccionarTabla('OS Pendientes')">
+                <span class="table-icon">⏳</span>
+                <div class="table-title">OS Pendientes</div>
+                <div class="table-description">Órdenes de servicio pendientes</div>
+            </div>
+            
+            <div class="table-option" onclick="seleccionarTabla('OSCerradas')">
+                <span class="table-icon">✅</span>
+                <div class="table-title">OS Cerradas</div>
+                <div class="table-description">Órdenes de servicio finalizadas</div>
+            </div>
+            
+            <div class="table-option" onclick="seleccionarTabla('TX y Cortes')">
+                <span class="table-icon">⚡</span>
+                <div class="table-title">TX y Cortes</div>
+                <div class="table-description">Transformadores y cortes de energía</div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = opcionesHTML;
 }
 
 function iniciarVerificacionSesion() {
@@ -1326,6 +1368,12 @@ async function logout() {
       .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
       .replace(/Sin Foto/g, '<br><em>Sin Foto</em>')
     .replace(/Nombre del Cliente/g, '<br><strong>Nombre del Cliente:</strong>')
+    .replace(/Direccion/g, '<br><strong>Direccion:</strong>')
+    .replace(/Tarifa/g, '<br><strong>Tarifa:</strong>')
+    .replace(/Medidor/g, '<br><strong>Medidor:</strong>')
+    .replace(/Fecha Lect/g, '<br><strong>Fecha Lect:</strong>')
+    .replace(/Nombre Cliente/g, '<br><strong>Nombre Cliente:</strong>')
+    .replace(/Cuenta Contrato/g, '<br><strong>Cuenta Contrato:</strong>')
     .replace(/Cuenta contrato/g, '<br><strong>Cuenta contrato:</strong>')
     .replace(/Dirección del cliente/g, '<br><strong>Dirección del cliente:</strong>')
     .replace(/Medidor (\d+)/g, '<br><strong>Medidor:</strong> $1')
@@ -1666,17 +1714,20 @@ function descargarKMLGenerado() {
 
 async function capturarCoordendasGPS() {
   if (!navigator.geolocation) {
-    console.log('Geolocalización no disponible');
-    return;
+    return; // Sin geolocalización disponible, continúa silenciosamente
   }
   
   try {
     const posicion = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
+      navigator.geolocation.getCurrentPosition(
+        resolve, 
+        reject, 
+        {
+          enableHighAccuracy: false, // Menos preciso pero más rápido
+          timeout: 3000, // Timeout corto para no demorar
+          maximumAge: 300000 // Acepta ubicación de hasta 5 minutos
+        }
+      );
     });
     
     const lat = posicion.coords.latitude;
@@ -1684,7 +1735,7 @@ async function capturarCoordendasGPS() {
     const coordenadas = `${lat},${lng}`;
     const timestamp = new Date().toISOString();
     
-    // Guardar en base de datos
+    // Guardar en base de datos silenciosamente
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1693,13 +1744,10 @@ async function capturarCoordendasGPS() {
           ultimaconexion: timestamp
         })
         .eq('id', currentUser.id);
-        
-      console.log(`GPS capturado: ${coordenadas}`);
     }
     
   } catch (error) {
-    console.log('Error capturando GPS:', error.message);
-    // Actualizar solo última conexión si no se puede obtener GPS
+    // Falló la captura GPS, continúa silenciosamente sin alertas
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1708,7 +1756,6 @@ async function capturarCoordendasGPS() {
     }
   }
 }
-
 
 function seleccionarTabla(tableName) {
   selectedTable = tableName;
@@ -1773,6 +1820,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
