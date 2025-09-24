@@ -1543,17 +1543,20 @@ function descargarKMLGenerado() {
 
 async function capturarCoordendasGPS() {
   if (!navigator.geolocation) {
-    console.log('Geolocalización no disponible');
-    return;
+    return; // Sin geolocalización disponible, continúa silenciosamente
   }
   
   try {
     const posicion = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
+      navigator.geolocation.getCurrentPosition(
+        resolve, 
+        reject, 
+        {
+          enableHighAccuracy: false, // Menos preciso pero más rápido
+          timeout: 3000, // Timeout corto para no demorar
+          maximumAge: 300000 // Acepta ubicación de hasta 5 minutos
+        }
+      );
     });
     
     const lat = posicion.coords.latitude;
@@ -1561,7 +1564,7 @@ async function capturarCoordendasGPS() {
     const coordenadas = `${lat},${lng}`;
     const timestamp = new Date().toISOString();
     
-    // Guardar en base de datos
+    // Guardar en base de datos silenciosamente
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1570,13 +1573,10 @@ async function capturarCoordendasGPS() {
           ultimaconexion: timestamp
         })
         .eq('id', currentUser.id);
-        
-      console.log(`GPS capturado: ${coordenadas}`);
     }
     
   } catch (error) {
-    console.log('Error capturando GPS:', error.message);
-    // Actualizar solo última conexión si no se puede obtener GPS
+    // Falló la captura GPS, continúa silenciosamente sin alertas
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1585,13 +1585,6 @@ async function capturarCoordendasGPS() {
     }
   }
 }
-
-
-
-
-
-
-
 
 async function busquedaAdicionalProgresiva(campo, valor) {
   // Mostrar indicador de búsqueda adicional
@@ -1799,6 +1792,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
