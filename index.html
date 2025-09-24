@@ -588,7 +588,7 @@ window.addEventListener('load', function() {
         </div>
 
         <!-- Sección de Selección de Tablas -->
-        <div class="table-selector" id="tableSelectorContainer">
+        <div class="table-option" onclick="seleccionarTabla('consultas_servicios')">
             <div class="card">
                 <h2>Seleccione el Módulo de Consulta</h2>
                 <p class="subtitulo">Elija el tipo de información que desea consultar</p>
@@ -1085,8 +1085,7 @@ function generarKMLString(ubicaciones) {
 
     async function login() {
   const username = document.getElementById('username').value.trim();
-  generarOpcionesSegunRol();
-  const password = document.getElementById('password').value.trim();
+    const password = document.getElementById('password').value.trim();
 
   if (!username || !password) {
     alert('Por favor ingrese usuario y contraseña');
@@ -1160,47 +1159,7 @@ function generarKMLString(ubicaciones) {
   }
 }
 
-      function generarOpcionesSegunRol() {
-    const userRole = currentUser?.rol || '';
-    const container = document.getElementById('tableSelectorContainer');
-    
-    let opcionesHTML = '';
-    
-    // Consultas de Servicios - Todos los roles
-    opcionesHTML += `
-        <div class="table-option" onclick="seleccionarTabla('consultas_servicios')">
-            <span class="table-icon">🏠</span>
-            <div class="table-title">Consultas de Servicios</div>
-            <div class="table-description">Información general de servicios y clientes</div>
-        </div>
-    `;
-    
-    // Otras opciones solo para roles que NO sean 'lectura'
-    if (userRole !== 'lectura') {
-        opcionesHTML += `
-            <div class="table-option" onclick="seleccionarTabla('OS Pendientes')">
-                <span class="table-icon">⏳</span>
-                <div class="table-title">OS Pendientes</div>
-                <div class="table-description">Órdenes de servicio pendientes</div>
-            </div>
-            
-            <div class="table-option" onclick="seleccionarTabla('OSCerradas')">
-                <span class="table-icon">✅</span>
-                <div class="table-title">OS Cerradas</div>
-                <div class="table-description">Órdenes de servicio finalizadas</div>
-            </div>
-            
-            <div class="table-option" onclick="seleccionarTabla('TX y Cortes')">
-                <span class="table-icon">⚡</span>
-                <div class="table-title">TX y Cortes</div>
-                <div class="table-description">Transformadores y cortes de energía</div>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = opcionesHTML;
-}
-
+     
 function iniciarVerificacionSesion() {
   setInterval(async () => {
     if (!currentUser) return;
@@ -1820,6 +1779,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
