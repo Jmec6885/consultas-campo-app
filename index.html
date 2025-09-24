@@ -1085,7 +1085,7 @@ function generarKMLString(ubicaciones) {
 
     async function login() {
   const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
+  const password = document.getElementById('password').value.trim();
 
   if (!username || !password) {
     alert('Por favor ingrese usuario y contraseña');
@@ -1673,20 +1673,17 @@ function descargarKMLGenerado() {
 
 async function capturarCoordendasGPS() {
   if (!navigator.geolocation) {
-    return; // Sin geolocalización disponible, continúa silenciosamente
+    console.log('Geolocalización no disponible');
+    return;
   }
   
   try {
     const posicion = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        resolve, 
-        reject, 
-        {
-          enableHighAccuracy: false, // Menos preciso pero más rápido
-          timeout: 3000, // Timeout corto para no demorar
-          maximumAge: 300000 // Acepta ubicación de hasta 5 minutos
-        }
-      );
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
     });
     
     const lat = posicion.coords.latitude;
@@ -1694,7 +1691,7 @@ async function capturarCoordendasGPS() {
     const coordenadas = `${lat},${lng}`;
     const timestamp = new Date().toISOString();
     
-    // Guardar en base de datos silenciosamente
+    // Guardar en base de datos
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1703,10 +1700,13 @@ async function capturarCoordendasGPS() {
           ultimaconexion: timestamp
         })
         .eq('id', currentUser.id);
+        
+      console.log(`GPS capturado: ${coordenadas}`);
     }
     
   } catch (error) {
-    // Falló la captura GPS, continúa silenciosamente sin alertas
+    console.log('Error capturando GPS:', error.message);
+    // Actualizar solo última conexión si no se puede obtener GPS
     if (currentUser) {
       await supabaseClient
         .from('usuarios')
@@ -1779,6 +1779,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
