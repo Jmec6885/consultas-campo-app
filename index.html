@@ -1299,7 +1299,7 @@ async function logout() {
   let valor = item[field] || 'N/A';
   
   // Formatear especialmente el campo Comentario
-  if (field === 'Comentario' && valor !== 'N/A') {
+  if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') { 
     // Reemplazar patrones comunes para mejorar legibilidad
     valor = valor
       .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>') // *texto* -> negrita con salto
@@ -1784,4 +1784,5 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
