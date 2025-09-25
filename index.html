@@ -1246,7 +1246,7 @@ async function logout() {
 
     async function buscar(campo, tipo) {
   await renovarSesion();
-  await capturarCoordendasGPS();
+  await capturarCoordenadasGPS();
   
   const valor = document.getElementById(`search${campo}`).value.trim();
   if (!valor) {
@@ -1280,149 +1280,242 @@ async function logout() {
   }
 }
     function mostrarResultados(resultados) {
-      const container = document.getElementById('searchResults');
-      const config = tableConfigs[selectedTable];
-      
-      // ✅ Guardamos los datos para uso posterior
-      consultasData = resultados;
-
-      if (resultados.length === 0) {
-        container.innerHTML = '<div class="result-card">❌ No se encontraron resultados</div>';
-        return;
-      }
-
-      let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
-      
-      resultados.forEach((item, index) => {
-        html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
-        config.resultFields.forEach(field => {
-  let valor = item[field] || 'N/A';
+  const container = document.getElementById('searchResults');
+  const config = tableConfigs[selectedTable];
   
-  // Formatear especialmente el campo Comentario
-  if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') { 
-    // Reemplazar patrones comunes para mejorar legibilidad
-    valor = valor
-      .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>') // *texto* -> negrita con salto
-      .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
-      .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
-      .replace(/Medidor según SAP/g, '<br><strong>Medidor según SAP:</strong>')
-      .replace(/Cantidad OS/g, '<br><strong>Cantidad OS:</strong>')
-      .replace(/Comentario Generacion/g, '<br><strong>Comentario Generación:</strong>')
-      .replace(/Comentario Incumplida o Adicional/g, '<br><strong>Comentario Incumplida o Adicional:</strong>')
-      .replace(/Comentario de Visita Fallida/g, '<br><strong>Comentario de Visita Fallida:</strong>')
-      .replace(/Comentario de visita Anterior/g, '<br><strong>Comentario de visita Anterior:</strong>')
-      .replace(/Foto Medidor o Suministr/g, '<br><strong>Foto Medidor o Suministro:</strong>')
-      .replace(/Coordenas Contiguo Previa/g, '<br><strong>Coordenadas Contiguo Previa:</strong>')
-      .replace(/Coordenadas Visita Anterior/g, '<br><strong>Coordenadas Visita Anterior:</strong>')
-      .replace(/Coordeadas lector/g, '<br><strong>Coordenadas lector:</strong>')
-      .replace(/Coordenadas de OS según ATOMO/g, '<br><strong>Coordenadas de OS según ATOMO:</strong>')
-      .replace(/Fecha Eje\. OS anterior/g, '<br><strong>Fecha Eje. OS anterior:</strong>')
-      .replace(/Unidad que Eje\. OS Anterior/g, '<br><strong>Unidad que Eje. OS Anterior:</strong>')
-      .replace(/Dias (\d+)/g, '<br><strong>Días:</strong> $1')
-      .replace(/lectura[:\s]*(\d+)/gi, '<br><strong>Lectura:</strong> $1')
-      .replace(/Sin Datos/g, '<br><em>Sin Datos</em>')
-      .replace(/Sin Comentario/g, '<br><em>Sin Comentario</em>')
-      .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
-      .replace(/Sin Foto/g, '<br><em>Sin Foto</em>')
-    .replace(/Nombre del Cliente/g, '<br><strong>Nombre del Cliente:</strong>')
-    .replace(/Cuenta contrato/g, '<br><strong>Cuenta contrato:</strong>')
-    .replace(/Dirección del cliente/g, '<br><strong>Dirección del cliente:</strong>')
-    .replace(/Medidor (\d+)/g, '<br><strong>Medidor:</strong> $1')
-    .replace(/Numero de OS/g, '<br><strong>Número de OS:</strong>')
-    .replace(/Tipologia/g, '<br><strong>Tipología:</strong>')
-    .replace(/Comentario de Cierre/g, '<br><strong>Comentario de Cierre:</strong>')
-    .replace(/coordenadas del suministro/g, '<br><strong>Coordenadas del suministro:</strong>')
-    .replace(/Comentario de Generacion/g, '<br><strong>Comentario de Generación:</strong>')
-    .replace(/Coordenadas De cierre/g, '<br><strong>Coordenadas De cierre:</strong>')
-    .replace(/Fecha Ejec/g, '<br><strong>Fecha Ejec:</strong>')
-    .replace(/Ejecutada por/g, '<br><strong>Ejecutada por:</strong>')
-    .replace(/Nombre Cliente/g, '<br><em>Nombre Cliente</em>')
-    .replace(/Cuenta Contrato/g, '<br><em>Cuenta Contrato</em>')
-    .replace(/Direccion/g, '<br><em>Direccion</em>')
-        .replace(/Tarifa/g, '<br><em>Tarifa</em>')
-        .replace(/Medidor/g, '<br><em>Medidor</em>')
-        .replace(/Fecha Lect/g, '<br><em>Fecha Lect</em>')
-        .replace(/Proteccion que lo Alimenta/g, '<br><em>Proteccion que lo Alimenta</em>')
-        .replace(/Propiedad/g, '<br><em>Propiedad</em>')
-        .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
-        .replace(/Capacidad Sum/g, '<br><em>Capacidad Sum</em>')
-        .replace(/Circuito/g, '<br><em>Circuito</em>')
-        .replace(/Uicacion/g, '<br><em>Uicacion</em>')
-        .replace(/Cantidad de clientes/g, '<br><em>Cantidad de clientes</em>')
-        .replace(/Estructura Tx/g, '<br><em>Estructura Tx</em>')
-        .replace(/Primary Phase ConcatSet/g, '<br><em>Primary Phase ConcatSet</em>')
-        .replace(/Usos/g, '<br><em>Usos</em>')
-        .replace(/Voltaje/g, '<br><em>Voltaje</em>')
-        .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
-        .replace(/Estructura/g, '<br><em>Estructura</em>')
-        .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
-        .replace(/Municipio/g, '<br><em>Municipio</em>')
-    .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
-    
-    html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
-  } else {
-    html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+  // Guardamos los datos para uso posterior
+  consultasData = resultados;
+
+  if (resultados.length === 0) {
+    container.innerHTML = '<div class="result-card">❌ No se encontraron resultados</div>';
+    return;
   }
-});
+
+  let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
+  
+  resultados.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      
+      // Formatear especialmente el campo Comentario
+      if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') { 
+        // Reemplazar patrones comunes para mejorar legibilidad
+        valor = valor
+          .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>') // *texto* -> negrita con salto
+          .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
+          .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
+          .replace(/Medidor según SAP/g, '<br><strong>Medidor según SAP:</strong>')
+          .replace(/Cantidad OS/g, '<br><strong>Cantidad OS:</strong>')
+          .replace(/Comentario Generacion/g, '<br><strong>Comentario Generación:</strong>')
+          .replace(/Comentario Incumplida o Adicional/g, '<br><strong>Comentario Incumplida o Adicional:</strong>')
+          .replace(/Comentario de Visita Fallida/g, '<br><strong>Comentario de Visita Fallida:</strong>')
+          .replace(/Comentario de visita Anterior/g, '<br><strong>Comentario de visita Anterior:</strong>')
+          .replace(/Foto Medidor o Suministr/g, '<br><strong>Foto Medidor o Suministro:</strong>')
+          .replace(/Coordenas Contiguo Previa/g, '<br><strong>Coordenadas Contiguo Previa:</strong>')
+          .replace(/Coordenadas Visita Anterior/g, '<br><strong>Coordenadas Visita Anterior:</strong>')
+          .replace(/Coordeadas lector/g, '<br><strong>Coordenadas lector:</strong>')
+          .replace(/Coordenadas de OS según ATOMO/g, '<br><strong>Coordenadas de OS según ATOMO:</strong>')
+          .replace(/Fecha Eje\. OS anterior/g, '<br><strong>Fecha Eje. OS anterior:</strong>')
+          .replace(/Unidad que Eje\. OS Anterior/g, '<br><strong>Unidad que Eje. OS Anterior:</strong>')
+          .replace(/Dias (\d+)/g, '<br><strong>Días:</strong> $1')
+          .replace(/lectura[:\s]*(\d+)/gi, '<br><strong>Lectura:</strong> $1')
+          .replace(/Sin Datos/g, '<br><em>Sin Datos</em>')
+          .replace(/Sin Comentario/g, '<br><em>Sin Comentario</em>')
+          .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
+          .replace(/Sin Foto/g, '<br><em>Sin Foto</em>')
+          .replace(/Nombre del Cliente/g, '<br><strong>Nombre del Cliente:</strong>')
+          .replace(/Cuenta contrato/g, '<br><strong>Cuenta contrato:</strong>')
+          .replace(/Dirección del cliente/g, '<br><strong>Dirección del cliente:</strong>')
+          .replace(/Medidor (\d+)/g, '<br><strong>Medidor:</strong> $1')
+          .replace(/Numero de OS/g, '<br><strong>Número de OS:</strong>')
+          .replace(/Tipologia/g, '<br><strong>Tipología:</strong>')
+          .replace(/Comentario de Cierre/g, '<br><strong>Comentario de Cierre:</strong>')
+          .replace(/coordenadas del suministro/g, '<br><strong>Coordenadas del suministro:</strong>')
+          .replace(/Comentario de Generacion/g, '<br><strong>Comentario de Generación:</strong>')
+          .replace(/Coordenadas De cierre/g, '<br><strong>Coordenadas De cierre:</strong>')
+          .replace(/Fecha Ejec/g, '<br><strong>Fecha Ejec:</strong>')
+          .replace(/Ejecutada por/g, '<br><strong>Ejecutada por:</strong>')
+          .replace(/Nombre Cliente/g, '<br><em>Nombre Cliente</em>')
+          .replace(/Cuenta Contrato/g, '<br><em>Cuenta Contrato</em>')
+          .replace(/Direccion/g, '<br><em>Direccion</em>')
+          .replace(/Tarifa/g, '<br><em>Tarifa</em>')
+          .replace(/Medidor/g, '<br><em>Medidor</em>')
+          .replace(/Fecha Lect/g, '<br><em>Fecha Lect</em>')
+          .replace(/Proteccion que lo Alimenta/g, '<br><em>Proteccion que lo Alimenta</em>')
+          .replace(/Propiedad/g, '<br><em>Propiedad</em>')
+          .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+          .replace(/Capacidad Sum/g, '<br><em>Capacidad Sum</em>')
+          .replace(/Circuito/g, '<br><em>Circuito</em>')
+          .replace(/Uicacion/g, '<br><em>Uicacion</em>')
+          .replace(/Cantidad de clientes/g, '<br><em>Cantidad de clientes</em>')
+          .replace(/Estructura Tx/g, '<br><em>Estructura Tx</em>')
+          .replace(/Primary Phase ConcatSet/g, '<br><em>Primary Phase ConcatSet</em>')
+          .replace(/Usos/g, '<br><em>Usos</em>')
+          .replace(/Voltaje/g, '<br><em>Voltaje</em>')
+          .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+          .replace(/Estructura/g, '<br><em>Estructura</em>')
+          .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
+          .replace(/Municipio/g, '<br><em>Municipio</em>')
+          .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
         
-        html += '<div class="action-buttons">';
-
-            
-        config.actions.forEach(action => {
-          const val = item[action];
-          if (!val) return;
-
-          // ✅ Lógica específica para cada tabla y acción
-          if (selectedTable === 'consultas_servicios') {
-            // Para tabla consultas_servicios
-            if (action === 'Coordenadas') {
-              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-            } else if (action === 'Coordenadasgis') {
-              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
-            } else if (action === 'FotoLink') {
-              html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            } else if (action === 'Grafica' && currentUser.rol !== 'Contratista') {
-  html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
-}
-          
-          } else if (selectedTable === 'TX y Cortes') {
-            // Para tabla TX y Cortes - solo "Ver Ubicación"
-            if (action === 'Coordenadas') {
-              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
-            }
-          } else {
-            // Para las demás tablas (comportamiento original)
-            if (action.toLowerCase().includes('coordenadas')) {
-              if (action === 'CoordenadasLector') {
-                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-              } else if (action === 'CoordenadasGis') {
-                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
-              } else {
-                html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-              }
-            } else if (action === 'FotoLink' || action === 'fotolink') {
-              html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-            }
+        html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
+      } else {
+        html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+      }
+    });
+    
+    // Verificar si es una búsqueda por OS para buscar relacionadas (solo en consultas_servicios)
+    if ((item.OSATMO || item.OSSAP) && selectedTable === 'consultas_servicios') {
+      setTimeout(() => {
+        buscarOSRelacionadas(item).then(relacionadas => {
+          if (relacionadas) {
+            mostrarOSRelacionadas(relacionadas, 'OS');
           }
         });
-        
-        html += '</div></div>';
-      });
-
-// Verificar si hay coordenadas válidas antes de mostrar el botón KML
-const tieneCoordenadasValidas = resultados.some(item => {
-  const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
-  return coordenadas && coordenadas.includes(',');
-});
-
-if (tieneCoordenadasValidas) {
-  html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
-  html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
-  html += '</div>';
-}
-      
-      container.innerHTML = html;
+      }, 2000);
     }
+    
+    html += '<div class="action-buttons">';
+    
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+
+      // ROLES:
+      // - Lectura: Solo coordenadas y foto en consultas_servicios
+      // - Contratista: Todo excepto gráficas
+      // - Consulta (o cualquier otro): Acceso completo
+      
+      if (currentUser.rol === 'Lectura') {
+        // Solo mostrar coordenadas y foto para rol Lectura, solo en consultas_servicios
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      } else if (currentUser.rol === 'Contratista') {
+        // Contratista ve todo excepto gráficas
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+          // No mostrar gráficas para contratista
+        } else if (selectedTable === 'TX y Cortes') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+          }
+        } else {
+          // Otras tablas para contratista
+          if (action.toLowerCase().includes('coordenadas')) {
+            if (action === 'CoordenadasLector') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            } else if (action === 'CoordenadasGis') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+            } else {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            }
+          } else if (action === 'FotoLink' || action === 'fotolink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      } else {
+        // Rol Consulta o cualquier otro - Acceso completo
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          } else if (action === 'Grafica') {
+            html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
+          }
+        } else if (selectedTable === 'TX y Cortes') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+          }
+        } else {
+          // Otras tablas - acceso completo
+          if (action.toLowerCase().includes('coordenadas')) {
+            if (action === 'CoordenadasLector') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            } else if (action === 'CoordenadasGis') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+            } else {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            }
+          } else if (action === 'FotoLink' || action === 'fotolink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      }
+    });
+    
+    html += '</div></div>';
+  });
+
+  // Verificar si hay coordenadas válidas antes de mostrar el botón KML
+  const tieneCoordenadasValidas = resultados.some(item => {
+    const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+    return coordenadas && coordenadas.includes(',');
+  });
+
+  if (tieneCoordenadasValidas) {
+    html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
+    html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
+    html += '</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+
+async function buscarOSRelacionadas(osData) {
+  if (!osData.OSATMO && !osData.OSSAP) return null;
+  
+  const criteriosBusqueda = [];
+  if (osData.CuentaContrato) criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
+  if (osData.Medidor) criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
+  if (osData.NombreCliente) criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
+  
+  const relacionadas = [];
+  const tablasOS = ['OS Pendientes', 'OSCerradas']; // Buscar solo en estas tablas
+  
+  for (const tabla of tablasOS) {
+    for (const criterio of criteriosBusqueda) {
+      const { data, error } = await supabaseClient
+        .from(tabla)
+        .select('*')
+        .eq(criterio.campo, criterio.valor);
+      
+      if (data && data.length > 0) {
+        data.forEach(item => {
+          const osId = item.OSATMO || item.OSATOMO || item.OSSAP;
+          if (osId && !relacionadas.find(r => (r.OSATMO || r.OSATOMO || r.OSSAP) === osId)) {
+            relacionadas.push({
+              ...item, 
+              criterioRelacion: criterio.campo,
+              tablaOrigen: tabla
+            });
+          }
+        });
+      }
+    }
+  }
+  
+  return relacionadas.length > 0 ? relacionadas : null;
+}
+
+
 
       async function busquedaMultipleKML(campo, valores) {
   const resultadosEncontrados = [];
@@ -1792,5 +1885,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
+
 
 
