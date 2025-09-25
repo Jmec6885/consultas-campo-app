@@ -1129,7 +1129,7 @@
 
     async function buscar(campo, tipo) {
   await renovarSesion();
-  await capturarCoordendasGPS(); // ✅ Nombre original (como en tu código)
+  await capturarCoordenadasGPS(); // ✅ Nombre original (como en tu código)
   const valor = document.getElementById(`search${campo}`).value.trim();
   if (!valor) {
     alert(`Por favor ingrese un valor para ${campo}`);
@@ -1408,26 +1408,26 @@
     }
 
     async function capturarCoordenadasGPS() {
-      if (!navigator.geolocation || !currentUser) return;
-      try {
-        const posicion = await new Promise((resolve) => {
-          navigator.geolocation.getCurrentPosition(
-            resolve,
-            () => {},
-            { enableHighAccuracy: false, timeout: 2000, maximumAge: 600000 }
-          );
-        });
-        const lat = posicion.coords.latitude;
-        const lng = posicion.coords.longitude;
-        const coordenadas = `${lat},${lng}`;
-        await supabaseClient
-          .from('usuarios')
-          .update({ coordenadas, ultimaconexion: new Date().toISOString() })
-          .eq('id', currentUser.id);
-      } catch (e) {
-        // Silencioso
-      }
-    }
+  if (!navigator.geolocation || !currentUser) return;
+  try {
+    const posicion = await new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        () => {},
+        { enableHighAccuracy: false, timeout: 2000, maximumAge: 600000 }
+      );
+    });
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const coordenadas = `${lat},${lng}`;
+    await supabaseClient
+      .from('usuarios')
+      .update({ coordenadas, ultimaconexion: new Date().toISOString() })
+      .eq('id', currentUser.id);
+  } catch (e) {
+    // Silencioso
+  }
+}
 
     async function busquedaAdicionalProgresiva(campo, valor) {
       mostrarIndicadorBusquedaAdicional();
@@ -1717,4 +1717,5 @@ function mostrarRelacionadosOrdenes(relacionados, tabla) {
   </script>
 </body>
 </html>
+
 
