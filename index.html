@@ -1534,10 +1534,10 @@ async function buscarOSRelacionadas(osData) {
   const todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];
   
   for (const tabla of todasLasTablas) {
-    if (tabla === selectedTable) {
-      console.log(`⏭️ Saltando tabla actual: ${tabla}`);
-      continue;
-    }
+    if (selectedTable === 'consultas_servicios' && tabla === 'consultas_servicios') {
+    console.log(`⏭️ Saltando tabla actual: ${tabla}`);
+    continue;
+}
     
     console.log(`🔍 Buscando en tabla: ${tabla}`);
     
@@ -2061,6 +2061,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
