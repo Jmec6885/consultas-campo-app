@@ -1300,18 +1300,16 @@
   }
   container.innerHTML = html;
 }
+        if (tieneCoordenadasValidas) {
+    html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
+    html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+} // ← Cierre único de la función
 
-      const tieneCoordenadasValidas = resultados.some(item => {
-        const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
-        return coordenadas && coordenadas.includes(',');
-      });
-      if (tieneCoordenadasValidas) {
-        html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
-        html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
-        html += '</div>';
-      }
-      container.innerHTML = html;
-    }
+     
+       
 
     async function busquedaMultipleKML(campo, valores) {
       const resultadosEncontrados = [];
@@ -1717,5 +1715,6 @@ function mostrarRelacionadosOrdenes(relacionados, tabla) {
   </script>
 </body>
 </html>
+
 
 
