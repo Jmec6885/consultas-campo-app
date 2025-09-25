@@ -1478,55 +1478,90 @@ async function logout() {
   container.innerHTML = html;
 }
 
-
 async function buscarOSRelacionadas(osData) {
   const osNumero = osData.OSATMO || osData.OSSAP || osData.OSATOMO;
   if (!osNumero) return null;
   
+  console.log('=== DEBUG OS RELACIONADAS ===');
+  console.log('OS Original:', osNumero);
+  console.log('Datos originales:', osData);
+  
   const criteriosBusqueda = [];
   
-  // Solo agregar CuentaContrato si no está en blanco, no es "0" y no es "200000000000"
+  // Verificar CuentaContrato
+  console.log('CuentaContrato:', osData.CuentaContrato, 'Tipo:', typeof osData.CuentaContrato);
   if (osData.CuentaContrato && 
-      osData.CuentaContrato.trim() !== '' && 
-      osData.CuentaContrato !== '0' && 
-      osData.CuentaContrato !== '200000000000') {
+      String(osData.CuentaContrato).trim() !== '' && 
+      String(osData.CuentaContrato) !== '0' && 
+      String(osData.CuentaContrato) !== '200000000000') {
     criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
+    console.log('✓ CuentaContrato válido:', osData.CuentaContrato);
+  } else {
+    console.log('✗ CuentaContrato filtrado');
   }
   
-  // Solo agregar Medidor si no está en blanco, no es "0"
+  // Verificar Medidor
+  console.log('Medidor:', osData.Medidor, 'Tipo:', typeof osData.Medidor);
   if (osData.Medidor && 
-      osData.Medidor.trim() !== '' && 
-      osData.Medidor !== '0') {
+      String(osData.Medidor).trim() !== '' && 
+      String(osData.Medidor) !== '0') {
     criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
+    console.log('✓ Medidor válido:', osData.Medidor);
+  } else {
+    console.log('✗ Medidor filtrado');
   }
   
-  // Solo agregar NombreCliente si no está en blanco y no es "0"
+  // Verificar NombreCliente
+  console.log('NombreCliente:', osData.NombreCliente, 'Tipo:', typeof osData.NombreCliente);
   if (osData.NombreCliente && 
-      osData.NombreCliente.trim() !== '' && 
-      osData.NombreCliente !== '0') {
+      String(osData.NombreCliente).trim() !== '' && 
+      String(osData.NombreCliente) !== '0' &&
+      String(osData.NombreCliente).toLowerCase() !== 'sin nombre') {
     criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
+    console.log('✓ NombreCliente válido:', osData.NombreCliente);
+  } else {
+    console.log('✗ NombreCliente filtrado');
   }
   
-  if (criteriosBusqueda.length === 0) return null;
+  console.log('Criterios de búsqueda finales:', criteriosBusqueda);
+  
+  if (criteriosBusqueda.length === 0) {
+    console.log('❌ No hay criterios válidos para buscar');
+    return null;
+  }
   
   const relacionadas = [];
   const todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];
   
   for (const tabla of todasLasTablas) {
-    // Saltar la tabla actual si es la misma
-    if (tabla === selectedTable) continue;
+    if (tabla === selectedTable) {
+      console.log(`⏭️ Saltando tabla actual: ${tabla}`);
+      continue;
+    }
+    
+    console.log(`🔍 Buscando en tabla: ${tabla}`);
     
     for (const criterio of criteriosBusqueda) {
       try {
+        console.log(`  🔎 Buscando por ${criterio.campo} = ${criterio.valor}`);
+        
         const { data, error } = await supabaseClient
           .from(tabla)
           .select('*')
           .eq(criterio.campo, criterio.valor);
         
-        if (!error && data && data.length > 0) {
+        if (error) {
+          console.log(`  ❌ Error en ${tabla}:`, error);
+          continue;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
+          
           data.forEach(item => {
             const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
-            // Solo agregar si tiene OS diferente a la original
+            console.log(`    📋 Revisando OS: ${itemOS}`);
+            
             if (itemOS && itemOS !== osNumero) {
               const existe = relacionadas.find(r => {
                 const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
@@ -1539,16 +1574,28 @@ async function buscarOSRelacionadas(osData) {
                   criterioRelacion: criterio.campo,
                   tablaOrigen: tabla
                 });
+                console.log(`    ✅ Agregada OS relacionada: ${itemOS}`);
+              } else {
+                console.log(`    ⏭️ OS ya existe en relacionadas: ${itemOS}`);
               }
+            } else {
+              console.log(`    ⏭️ Misma OS o sin número: ${itemOS}`);
             }
           });
+        } else {
+          console.log(`  ❌ No se encontraron registros en ${tabla} para ${criterio.campo} = ${criterio.valor}`);
         }
       } catch (error) {
-        console.log(`Error buscando en tabla ${tabla}:`, error);
+        console.log(`❌ Error buscando en tabla ${tabla}:`, error);
         continue;
       }
     }
   }
+  
+  console.log('=== RESULTADO FINAL ===');
+  console.log('Total OS relacionadas encontradas:', relacionadas.length);
+  console.log('OS relacionadas:', relacionadas);
+  console.log('========================');
   
   return relacionadas.length > 0 ? relacionadas : null;
 }
@@ -2014,6 +2061,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
