@@ -1093,12 +1093,12 @@ function generarKMLString(ubicaciones) {
   }
 
   try {
-    const { data: existingSession } = await supabaseClient
+    const { data: existingSession, error: sessionError } = await supabaseClient
       .from('usuarios')
       .select('*')
       .eq('usuario', username)
       .eq('sessionactiva', true)
-      .single();
+      .maybeSingle();
 
     if (existingSession) {
       const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
@@ -2061,6 +2061,15 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 
