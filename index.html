@@ -1366,7 +1366,7 @@ async function logout() {
     });
     
     // Verificar si es una búsqueda por OS para buscar relacionadas (solo en consultas_servicios)
-    if ((item.OSATMO || item.OSSAP) && selectedTable === 'consultas_servicios') {
+    if (item.OSATMO || item.OSSAP || item.OSATOMO) {
       setTimeout(() => {
         buscarOSRelacionadas(item).then(relacionadas => {
           if (relacionadas) {
@@ -1480,39 +1480,98 @@ async function logout() {
 
 
 async function buscarOSRelacionadas(osData) {
-  if (!osData.OSATMO && !osData.OSSAP) return null;
+  const osNumero = osData.OSATMO || osData.OSSAP || osData.OSATOMO;
+  if (!osNumero) return null;
   
   const criteriosBusqueda = [];
   if (osData.CuentaContrato) criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
   if (osData.Medidor) criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
   if (osData.NombreCliente) criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
   
-  const relacionadas = [];
-  const tablasOS = ['OS Pendientes', 'OSCerradas']; // Buscar solo en estas tablas
+  if (criteriosBusqueda.length === 0) return null;
   
-  for (const tabla of tablasOS) {
+  const relacionadas = [];
+  const todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];
+  
+  for (const tabla of todasLasTablas) {
+    // Saltar la tabla actual si es la misma
+    if (tabla === selectedTable) continue;
+    
     for (const criterio of criteriosBusqueda) {
-      const { data, error } = await supabaseClient
-        .from(tabla)
-        .select('*')
-        .eq(criterio.campo, criterio.valor);
-      
-      if (data && data.length > 0) {
-        data.forEach(item => {
-          const osId = item.OSATMO || item.OSATOMO || item.OSSAP;
-          if (osId && !relacionadas.find(r => (r.OSATMO || r.OSATOMO || r.OSSAP) === osId)) {
-            relacionadas.push({
-              ...item, 
-              criterioRelacion: criterio.campo,
-              tablaOrigen: tabla
-            });
-          }
-        });
+      try {
+        const { data, error } = await supabaseClient
+          .from(tabla)
+          .select('*')
+          .eq(criterio.campo, criterio.valor);
+        
+        if (!error && data && data.length > 0) {
+          data.forEach(item => {
+            const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
+            // Solo agregar si tiene OS diferente a la original
+            if (itemOS && itemOS !== osNumero) {
+              const existe = relacionadas.find(r => {
+                const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
+                return rOS === itemOS;
+              });
+              
+              if (!existe) {
+                relacionadas.push({
+                  ...item, 
+                  criterioRelacion: criterio.campo,
+                  tablaOrigen: tabla
+                });
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.log(`Error buscando en tabla ${tabla}:`, error);
+        continue;
       }
     }
   }
   
   return relacionadas.length > 0 ? relacionadas : null;
+}
+
+      function mostrarOSRelacionadas(osRelacionadas, criterioOriginal) {
+  const container = document.getElementById('searchResults');
+  let html = `
+    <div class="result-card" style="background: #fff3cd; border: 2px solid #ffc107; margin-top: 15px;">
+      <div class="result-header">🔗 OS Relacionadas Encontradas</div>
+      <p>Se encontraron <strong>${osRelacionadas.length}</strong> OS adicionales para el mismo cliente/ubicación:</p>
+  `;
+  
+  osRelacionadas.forEach((os, index) => {
+    const osNumero = os.OSATMO || os.OSATOMO || os.OSSAP || 'N/A';
+    html += `
+      <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffc107; text-align: left;">
+        <div><strong>📋 Tabla:</strong> ${os.tablaOrigen}</div>
+        <div><strong>🔢 OS:</strong> ${osNumero}</div>
+        <div><strong>🔗 Relacionada por:</strong> ${os.criterioRelacion} (${os[os.criterioRelacion]})</div>
+        <div><strong>👤 Cliente:</strong> ${os.NombreCliente || 'N/A'}</div>
+        <div><strong>📄 Cuenta:</strong> ${os.CuentaContrato || 'N/A'}</div>
+        <div><strong>⚡ Medidor:</strong> ${os.Medidor || 'N/A'}</div>
+    `;
+    
+    if (os.Comentario && os.Comentario !== 'N/A') {
+      html += `<div style="margin-top: 10px;"><strong>💬 Comentario:</strong> <em>${os.Comentario.substring(0, 100)}${os.Comentario.length > 100 ? '...' : ''}</em></div>`;
+    }
+    
+    html += `<div class="action-buttons" style="margin-top: 10px;">`;
+    
+    if (os.Coordenadas) {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${os.Coordenadas}')">📍 Coordenadas</button>`;
+    }
+    if (os.FotoLink) {
+      html += `<button class="btn btn-secondary" onclick="verFoto('${os.FotoLink}')">📸 Ver Foto</button>`;
+    }
+    
+    html += `</div></div>`;
+  });
+  
+  html += `</div>`;
+  container.innerHTML += html;
 }
 
 async function capturarCoordenadasGPS() {
@@ -1936,6 +1995,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
