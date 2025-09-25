@@ -729,7 +729,7 @@ window.addEventListener('load', function() {
         title: 'OS Pendientes',
         icon: '⏳',
         fields: [
-          { key: 'OSATMO', label: 'OS ATMO', type: 'exact' },
+          { key: 'OSATMO', label: 'OS ATOMO', type: 'exact' },
           { key: 'OSSAP', label: 'OS SAP', type: 'exact' },
           { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
           { key: 'Medidor', label: 'Medidor', type: 'exact' },
@@ -1515,7 +1515,58 @@ async function buscarOSRelacionadas(osData) {
   return relacionadas.length > 0 ? relacionadas : null;
 }
 
-
+async function capturarCoordenadasGPS() {
+  if (!navigator.geolocation) {
+    return;
+  }
+  
+  try {
+    const posicion = await new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 2000);
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          clearTimeout(timeoutId);
+          resolve(pos);
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 1500,
+          maximumAge: 600000
+        }
+      );
+    });
+    
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const coordenadas = `${lat},${lng}`;
+    const timestamp = new Date().toISOString();
+    
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadas,
+          ultimaconexion: timestamp
+        })
+        .eq('id', currentUser.id);
+    }
+    
+  } catch (error) {
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ ultimaconexion: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+  }
+}
 
       async function busquedaMultipleKML(campo, valores) {
   const resultadosEncontrados = [];
@@ -1885,6 +1936,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
