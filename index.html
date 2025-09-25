@@ -1484,9 +1484,28 @@ async function buscarOSRelacionadas(osData) {
   if (!osNumero) return null;
   
   const criteriosBusqueda = [];
-  if (osData.CuentaContrato) criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
-  if (osData.Medidor) criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
-  if (osData.NombreCliente) criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
+  
+  // Solo agregar CuentaContrato si no está en blanco, no es "0" y no es "200000000000"
+  if (osData.CuentaContrato && 
+      osData.CuentaContrato.trim() !== '' && 
+      osData.CuentaContrato !== '0' && 
+      osData.CuentaContrato !== '200000000000') {
+    criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
+  }
+  
+  // Solo agregar Medidor si no está en blanco, no es "0"
+  if (osData.Medidor && 
+      osData.Medidor.trim() !== '' && 
+      osData.Medidor !== '0') {
+    criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
+  }
+  
+  // Solo agregar NombreCliente si no está en blanco y no es "0"
+  if (osData.NombreCliente && 
+      osData.NombreCliente.trim() !== '' && 
+      osData.NombreCliente !== '0') {
+    criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
+  }
   
   if (criteriosBusqueda.length === 0) return null;
   
@@ -1995,6 +2014,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
