@@ -1705,20 +1705,59 @@ async function buscarOSRelacionadas(osData) {
   const datos = window.resultadosAdicionalesOS[tabla];
   const config = tableConfigs[tabla];
   
-  const tablaAnterior = selectedTable;
-  selectedTable = tabla;
+  // *** CAMBIO CLAVE: No cambiar selectedTable ***
+  // const tablaAnterior = selectedTable;
+  // selectedTable = tabla;
   
-  mostrarResultados(datos);
-  
+  // Crear un contenedor separado para mostrar las relacionadas
   const container = document.getElementById('searchResults');
-  const btnVolver = `
-    <div style="margin-top: 20px; text-align: center;">
-      <button class="btn btn-back" onclick="volverAResultadosPrincipales('${tablaAnterior}')">
-        ← Volver a Resultados Principales
-      </button>
+  
+  // Guardar el contenido actual antes de reemplazarlo
+  const contenidoOriginal = container.innerHTML;
+  
+  let html = `
+    <div class="result-card" style="background: #e3f2fd; border: 2px solid #2196f3;">
+      <div class="result-header">📋 ${config.title} - OS Relacionadas</div>
+      <div style="margin-bottom: 15px; text-align: center;">
+        <button class="btn btn-back" onclick="restaurarResultadosOriginales()">
+          ← Volver a Resultados Principales
+        </button>
+      </div>
     </div>
   `;
-  container.innerHTML += btnVolver;
+  
+  // Crear resultados usando la configuración de la tabla relacionada temporalmente
+  const selectedTableOriginal = selectedTable;
+  selectedTable = tabla; // Cambio temporal solo para mostrarResultados
+  
+  datos.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Relacionada ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+    });
+    
+    html += '<div class="action-buttons">';
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+      
+      if (action.toLowerCase().includes('coordenadas')) {
+        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
+      } else if (action === 'FotoLink' || action === 'fotolink') {
+        html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+      }
+    });
+    html += '</div></div>';
+  });
+  
+  // Restaurar selectedTable original
+  selectedTable = selectedTableOriginal;
+  
+  // Guardar el contenido original para poder restaurarlo
+  window.contenidoOriginalBusqueda = contenidoOriginal;
+  
+  container.innerHTML = html;
 }
 
 async function capturarCoordenadasGPS() {
@@ -1774,6 +1813,16 @@ async function capturarCoordenadasGPS() {
   }
 }
 
+      function restaurarResultadosOriginales() {
+  const container = document.getElementById('searchResults');
+  if (window.contenidoOriginalBusqueda) {
+    container.innerHTML = window.contenidoOriginalBusqueda;
+    // Limpiar la variable temporal
+    delete window.contenidoOriginalBusqueda;
+  } else {
+    container.innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+  }
+}
       async function busquedaMultipleKML(campo, valores) {
   const resultadosEncontrados = [];
   const noEncontrados = [];
@@ -2048,26 +2097,81 @@ function mostrarResultadosAdicionales(tabla) {
   const datos = window.resultadosAdicionales[tabla];
   const config = tableConfigs[tabla];
   
-  const tablaAnterior = selectedTable;
-  selectedTable = tabla;
-  
-  mostrarResultados(datos);
-  
+  // *** NO CAMBIAR selectedTable PERMANENTEMENTE ***
   const container = document.getElementById('searchResults');
-  const btnVolver = `
-    <div style="margin-top: 20px; text-align: center;">
-      <button class="btn btn-back" onclick="volverAResultadosPrincipales('${tablaAnterior}')">
-        ← Volver a Datos Suministros
-      </button>
+  
+  // Guardar el contenido actual antes de reemplazarlo
+  const contenidoOriginal = container.innerHTML;
+  
+  let html = `
+    <div class="result-card" style="background: #e3f2fd; border: 2px solid #2196f3;">
+      <div class="result-header">📋 ${config.title} - Información Adicional</div>
+      <div style="margin-bottom: 15px; text-align: center;">
+        <button class="btn btn-back" onclick="restaurarResultadosOriginales()">
+          ← Volver a Consulta de Suministros
+        </button>
+      </div>
     </div>
   `;
-  container.innerHTML += btnVolver;
+  
+  // Cambio temporal de selectedTable solo para generar los resultados
+  const selectedTableOriginal = selectedTable;
+  selectedTable = tabla;
+  
+  datos.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      
+      // Aplicar el mismo formato especial para comentarios
+      if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') {
+        valor = valor
+          .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>')
+          .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
+          .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
+          .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
+        
+        html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
+      } else {
+        html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+      }
+    });
+    
+    html += '<div class="action-buttons">';
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+      
+      if (action.toLowerCase().includes('coordenadas')) {
+        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
+      } else if (action === 'FotoLink' || action === 'fotolink') {
+        html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+      }
+    });
+    html += '</div></div>';
+  });
+  
+  // Restaurar selectedTable original
+  selectedTable = selectedTableOriginal;
+  
+  // Guardar el contenido original para poder restaurarlo
+  window.contenidoOriginalBusqueda = contenidoOriginal;
+  
+  container.innerHTML = html;
 }
-
-function volverAResultadosPrincipales(tablaAnterior) {
-  selectedTable = tablaAnterior;
-  // Limpiar y permitir nueva búsqueda
-  document.getElementById('searchResults').innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+      function restaurarResultadosOriginales() {
+  const container = document.getElementById('searchResults');
+  if (window.contenidoOriginalBusqueda) {
+    container.innerHTML = window.contenidoOriginalBusqueda;
+    // Limpiar la variable temporal
+    delete window.contenidoOriginalBusqueda;
+  } else {
+    container.innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+  }
+}
+      function volverAResultadosPrincipales(tablaAnterior) {
+  // Redirigir a la nueva función que conserva los resultados
+  restaurarResultadosOriginales();
 }
 
 
@@ -2141,13 +2245,14 @@ window.addEventListener('load', function() {
     }
     
     // Verificar sesión offline
-    if (!verificarDatosOffline()) {
-        mostrarTablasSegunRol();
-    }
+if (!verificarDatosOffline()) {
+    document.getElementById('loginSection').style.display = 'block';
+}
 });
 </script>
 </body>
 </html>
+
 
 
 
