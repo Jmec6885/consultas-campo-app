@@ -1565,75 +1565,83 @@ async function buscarOSRelacionadas(osData) {
   
   let tablasBusqueda = [];
 
-if (selectedTable === 'OS Pendientes') {
-  tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
-} else if (selectedTable === 'OSCerradas') {
-  tablasBusqueda = ['OSCerradas', 'OS Pendientes'];
-} else {
-  tablasBusqueda = [];
-}
+  if (selectedTable === 'OS Pendientes') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else if (selectedTable === 'OSCerradas') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else if (selectedTable === 'consultas_servicios') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else {
+    tablasBusqueda = [];
+  }
 
-for (const tabla of tablasBusqueda) {
-  console.log(`🔍 Buscando en tabla: ${tabla}`);
-    
-  for (const criterio of criteriosBusqueda) {
-    try {
-      const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
-      if (!campoEquivalente) continue;
+  for (const tabla of tablasBusqueda) {
+    console.log(`🔍 Buscando en tabla: ${tabla}`);
       
-      console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
-      
-      const { data, error } = await supabaseClient
-        .from(tabla)
-        .select('*')
-        .eq(campoEquivalente, criterio.valor);
-      
-      if (error) {
-        console.log(`  ❌ Error en ${tabla}:`, error);
-        continue;
-      }
-      
-      if (data && data.length > 0) {
-        console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
+    for (const criterio of criteriosBusqueda) {
+      try {
+        const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
+        if (!campoEquivalente) continue;
         
-        if (!relacionadasPorTabla[tabla]) {
-          relacionadasPorTabla[tabla] = [];
+        console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
+        
+        const { data, error } = await supabaseClient
+          .from(tabla)
+          .select('*')
+          .eq(campoEquivalente, criterio.valor);
+        
+        if (error) {
+          console.log(`  ❌ Error en ${tabla}:`, error);
+          continue;
         }
         
-        data.forEach(item => {
-          const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
-          console.log(`    📋 Revisando OS: ${itemOS}`);
+        if (data && data.length > 0) {
+          console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
           
-          if (itemOS && itemOS !== osNumero) {
-            const existe = relacionadasPorTabla[tabla].find(r => {
-              const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
-              return rOS === itemOS;
-            });
-            
-            if (!existe) {
-              relacionadasPorTabla[tabla].push({
-                ...item, 
-                criterioRelacion: criterio.campo,
-                tablaOrigen: tabla
-              });
-              console.log(`    ✅ Agregada OS relacionada: ${itemOS}`);
-            } else {
-              console.log(`    ⏭️ OS ya existe en relacionadas: ${itemOS}`);
-            }
-          } else {
-            console.log(`    ⏭️ Misma OS o sin número: ${itemOS}`);
+          if (!relacionadasPorTabla[tabla]) {
+            relacionadasPorTabla[tabla] = [];
           }
-        });
-      } else {
-        console.log(`  ❌ No se encontraron registros en ${tabla} para ${criterio.campo} = ${criterio.valor}`);
+          
+          data.forEach(item => {
+            const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
+            console.log(`    📋 Revisando OS: ${itemOS}`);
+            
+            // Incluir todas las OS relacionadas, excluyendo solo la OS exacta que se está consultando
+            const esMismaOS = (selectedTable === tabla && itemOS === osNumero);
+
+            if (itemOS && !esMismaOS) {
+              // Verificar que no sea un duplicado en la misma tabla
+              const existe = relacionadasPorTabla[tabla] && relacionadasPorTabla[tabla].find(r => {
+                const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
+                return rOS === itemOS;
+              });
+              
+              if (!existe) {
+                if (!relacionadasPorTabla[tabla]) {
+                  relacionadasPorTabla[tabla] = [];
+                }
+                relacionadasPorTabla[tabla].push({
+                  ...item, 
+                  criterioRelacion: criterio.campo,
+                  tablaOrigen: tabla
+                });
+                console.log(`    ✅ Agregada OS relacionada: ${itemOS} desde ${tabla}`);
+              } else {
+                console.log(`    ⏭️ OS ya existe en relacionadas: ${itemOS} en ${tabla}`);
+              }
+            } else if (esMismaOS) {
+              console.log(`    ⏭️ Misma OS original: ${itemOS}`);
+            } else {
+              console.log(`    ⏭️ OS sin número válido: ${itemOS}`);
+            }
+          });
+        }
+      } catch (error) {
+        console.log(`❌ Error buscando en tabla ${tabla}:`, error);
+        continue;
       }
-    } catch (error) {
-      console.log(`❌ Error buscando en tabla ${tabla}:`, error);
-      continue;
     }
   }
-}
-
   
   ocultarIndicadorBusquedaAdicional();
   
@@ -2129,6 +2137,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
