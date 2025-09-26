@@ -1516,7 +1516,7 @@ async function buscarOSRelacionadas(osData) {
   
   const criteriosBusqueda = [];
   
-  // Verificar CuentaContrato
+  // Verificar CuentaContrato (sin cambios)
   console.log('CuentaContrato:', osData.CuentaContrato, 'Tipo:', typeof osData.CuentaContrato);
   if (osData.CuentaContrato && 
       String(osData.CuentaContrato).trim() !== '' && 
@@ -1528,7 +1528,7 @@ async function buscarOSRelacionadas(osData) {
     console.log('✗ CuentaContrato filtrado');
   }
   
-  // Verificar Medidor
+  // Verificar Medidor (sin cambios)
   console.log('Medidor:', osData.Medidor, 'Tipo:', typeof osData.Medidor);
   if (osData.Medidor && 
       String(osData.Medidor).trim() !== '' && 
@@ -1539,7 +1539,7 @@ async function buscarOSRelacionadas(osData) {
     console.log('✗ Medidor filtrado');
   }
   
-  // Verificar NombreCliente
+  // Verificar NombreCliente (sin cambios)
   console.log('NombreCliente:', osData.NombreCliente, 'Tipo:', typeof osData.NombreCliente);
   if (osData.NombreCliente && 
       String(osData.NombreCliente).trim() !== '' && 
@@ -1558,25 +1558,31 @@ async function buscarOSRelacionadas(osData) {
     return null;
   }
   
-  const relacionadas = [];
+  // Mostrar indicador de carga (reutilizando la función existente)
+  mostrarIndicadorBusquedaAdicional();
+  
+  const relacionadasPorTabla = {};  // Nuevo: objeto agrupado {tabla: [items]}
   const todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];
   
   for (const tabla of todasLasTablas) {
-    if (selectedTable === 'consultas_servicios' && tabla === 'consultas_servicios') {
-    console.log(`⏭️ Saltando tabla actual: ${tabla}`);
-    continue;
-}
+    if (selectedTable === tabla) {
+      console.log(`⏭️ Saltando tabla actual: ${tabla}`);
+      continue;
+    }
     
     console.log(`🔍 Buscando en tabla: ${tabla}`);
     
     for (const criterio of criteriosBusqueda) {
       try {
-        console.log(`  🔎 Buscando por ${criterio.campo} = ${criterio.valor}`);
+        const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
+        if (!campoEquivalente) continue;
+        
+        console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
         
         const { data, error } = await supabaseClient
           .from(tabla)
           .select('*')
-          .eq(criterio.campo, criterio.valor);
+          .eq(campoEquivalente, criterio.valor);
         
         if (error) {
           console.log(`  ❌ Error en ${tabla}:`, error);
@@ -1586,18 +1592,22 @@ async function buscarOSRelacionadas(osData) {
         if (data && data.length > 0) {
           console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
           
+          if (!relacionadasPorTabla[tabla]) {
+            relacionadasPorTabla[tabla] = [];
+          }
+          
           data.forEach(item => {
             const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
             console.log(`    📋 Revisando OS: ${itemOS}`);
             
             if (itemOS && itemOS !== osNumero) {
-              const existe = relacionadas.find(r => {
+              const existe = relacionadasPorTabla[tabla].find(r => {
                 const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
                 return rOS === itemOS;
               });
               
               if (!existe) {
-                relacionadas.push({
+                relacionadasPorTabla[tabla].push({
                   ...item, 
                   criterioRelacion: criterio.campo,
                   tablaOrigen: tabla
@@ -1620,52 +1630,71 @@ async function buscarOSRelacionadas(osData) {
     }
   }
   
+  // Ocultar indicador de carga
+  ocultarIndicadorBusquedaAdicional();
+  
   console.log('=== RESULTADO FINAL ===');
-  console.log('Total OS relacionadas encontradas:', relacionadas.length);
-  console.log('OS relacionadas:', relacionadas);
+  console.log('Total OS relacionadas encontradas por tabla:', Object.keys(relacionadasPorTabla).length);
+  console.log('OS relacionadas:', relacionadasPorTabla);
   console.log('========================');
   
-  return relacionadas.length > 0 ? relacionadas : null;
+  return Object.keys(relacionadasPorTabla).length > 0 ? relacionadasPorTabla : null;
 }
 
-      function mostrarOSRelacionadas(osRelacionadas, criterioOriginal) {
+      function mostrarOSRelacionadas(relacionadasPorTabla, criterioOriginal) {
+  if (!relacionadasPorTabla || Object.keys(relacionadasPorTabla).length === 0) {
+    return;  // Nada que mostrar
+  }
+  
+  // Almacenar en una variable global específica para OS relacionadas (evita conflictos)
+  window.resultadosAdicionalesOS = relacionadasPorTabla;
+  
+  // Reutilizar la función existente, pero con un contenedor adaptado para "OS Relacionadas"
   const container = document.getElementById('searchResults');
-  let html = `
+  let botonesHtml = `
     <div class="result-card" style="background: #fff3cd; border: 2px solid #ffc107; margin-top: 15px;">
       <div class="result-header">🔗 OS Relacionadas Encontradas</div>
-      <p>Se encontraron <strong>${osRelacionadas.length}</strong> OS adicionales para el mismo cliente/ubicación:</p>
+      <p>Se encontraron OS adicionales en otras tablas. Haz clic para ver detalles completos:</p>
+      <div class="action-buttons">
   `;
   
-  osRelacionadas.forEach((os, index) => {
-    const osNumero = os.OSATMO || os.OSATOMO || os.OSSAP || 'N/A';
-    html += `
-      <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffc107; text-align: left;">
-        <div><strong>📋 Tabla:</strong> ${os.tablaOrigen}</div>
-        <div><strong>🔢 OS:</strong> ${osNumero}</div>
-        <div><strong>🔗 Relacionada por:</strong> ${os.criterioRelacion} (${os[os.criterioRelacion]})</div>
-        <div><strong>👤 Cliente:</strong> ${os.NombreCliente || 'N/A'}</div>
-        <div><strong>📄 Cuenta:</strong> ${os.CuentaContrato || 'N/A'}</div>
-        <div><strong>⚡ Medidor:</strong> ${os.Medidor || 'N/A'}</div>
+  for (const [tabla, datos] of Object.entries(relacionadasPorTabla)) {
+    const config = tableConfigs[tabla];
+    const icono = config ? config.icon : '📋';
+    botonesHtml += `
+      <button class="btn btn-secondary" onclick="mostrarResultadosAdicionalesOS('${tabla}')">
+        ${icono} Ver OS Relacionadas en ${config.title} (${datos.length})
+      </button>
     `;
-    
-    if (os.Comentario && os.Comentario !== 'N/A') {
-      html += `<div style="margin-top: 10px;"><strong>💬 Comentario:</strong> <em>${os.Comentario.substring(0, 100)}${os.Comentario.length > 100 ? '...' : ''}</em></div>`;
-    }
-    
-    html += `<div class="action-buttons" style="margin-top: 10px;">`;
-    
-    if (os.Coordenadas) {
-      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${os.Coordenadas}')">📍 Coordenadas</button>`;
-    }
-    if (os.FotoLink) {
-      html += `<button class="btn btn-secondary" onclick="verFoto('${os.FotoLink}')">📸 Ver Foto</button>`;
-    }
-    
-    html += `</div></div>`;
-  });
+  }
   
-  html += `</div>`;
-  container.innerHTML += html;
+  botonesHtml += `</div></div>`;
+  container.innerHTML += botonesHtml;
+}
+
+      function mostrarResultadosAdicionalesOS(tabla) {
+  if (!window.resultadosAdicionalesOS || !window.resultadosAdicionalesOS[tabla]) {
+    alert('No hay datos disponibles');
+    return;
+  }
+  
+  const datos = window.resultadosAdicionalesOS[tabla];
+  const config = tableConfigs[tabla];
+  
+  const tablaAnterior = selectedTable;
+  selectedTable = tabla;
+  
+  mostrarResultados(datos);
+  
+  const container = document.getElementById('searchResults');
+  const btnVolver = `
+    <div style="margin-top: 20px; text-align: center;">
+      <button class="btn btn-back" onclick="volverAResultadosPrincipales('${tablaAnterior}')">
+        ← Volver a Resultados Principales
+      </button>
+    </div>
+  `;
+  container.innerHTML += btnVolver;
 }
 
 async function capturarCoordenadasGPS() {
@@ -2095,6 +2124,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
