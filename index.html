@@ -1160,6 +1160,10 @@ function generarKMLString(ubicaciones) {
 }
 
       function mostrarTablasSegunRol() {
+     if (!currentUser || !currentUser.rol) {
+    console.log('❌ currentUser no está disponible');
+    return;
+  }
   const tableOptions = document.querySelectorAll('.table-option');
   
   if (currentUser.rol === 'Lectura') {
@@ -2144,6 +2148,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
