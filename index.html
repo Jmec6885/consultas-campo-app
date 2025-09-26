@@ -1392,15 +1392,17 @@ async function logout() {
     });
     
     // Verificar si es una búsqueda por OS para buscar relacionadas (solo en consultas_servicios)
-    if (item.OSATMO || item.OSSAP || item.OSATOMO) {
-      setTimeout(() => {
-        buscarOSRelacionadas(item).then(relacionadas => {
-          if (relacionadas) {
-            mostrarOSRelacionadas(relacionadas, 'OS');
-          }
-        });
-      }, 2000);
-    }
+    // Verificar si es una búsqueda por OS para buscar relacionadas (en todas las tablas de OS)
+if ((selectedTable === 'consultas_servicios' || selectedTable === 'OS Pendientes' || selectedTable === 'OSCerradas') && 
+    (item.OSATMO || item.OSSAP || item.OSATOMO)) {
+  setTimeout(() => {
+    buscarOSRelacionadas(item).then(relacionadas => {
+      if (relacionadas) {
+        mostrarOSRelacionadas(relacionadas, 'OS');
+      }
+    });
+  }, 2000);
+}
     
     html += '<div class="action-buttons">';
     
@@ -1631,7 +1633,7 @@ async function buscarOSRelacionadas(osData) {
   let html = `
     <div class="result-card" style="background: #fff3cd; border: 2px solid #ffc107; margin-top: 15px;">
       <div class="result-header">🔗 OS Relacionadas Encontradas</div>
-      <p>Se encontraron <strong>${osRelacionadas.length}</strong> OS adicionales para el mismo cliente/ubicación:</p>
+      <p>Se encontraron <strong>${osRelacionadas.length}</strong> OS relacionadas en otras tablas:</p>
   `;
   
   osRelacionadas.forEach((os, index) => {
@@ -2093,6 +2095,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
