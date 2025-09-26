@@ -1576,77 +1576,75 @@ async function buscarOSRelacionadas(osData) {
   }
 
   for (const tabla of tablasBusqueda) {
-  console.log(`🔍 Buscando en tabla: ${tabla}`);
-  
-  // Inicializar el array de esta tabla una sola vez
-  if (!relacionadasPorTabla[tabla]) {
-    relacionadasPorTabla[tabla] = [];
-  }
+    console.log(`🔍 Buscando en tabla: ${tabla}`);
     
-  for (const criterio of criteriosBusqueda) {
-    try {
-      const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
-      if (!campoEquivalente) continue;
+    // Inicializar el array de esta tabla una sola vez
+    if (!relacionadasPorTabla[tabla]) {
+      relacionadasPorTabla[tabla] = [];
+    }
       
-      console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
-      
-      const { data, error } = await supabaseClient
-        .from(tabla)
-        .select('*')
-        .eq(campoEquivalente, criterio.valor);
-      
-      if (error) {
-        console.log(`  ❌ Error en ${tabla}:`, error);
+    for (const criterio of criteriosBusqueda) {
+      try {
+        const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
+        if (!campoEquivalente) continue;
+        
+        console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
+        
+        const { data, error } = await supabaseClient
+          .from(tabla)
+          .select('*')
+          .eq(campoEquivalente, criterio.valor);
+        
+        if (error) {
+          console.log(`  ❌ Error en ${tabla}:`, error);
+          continue;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`  ✅ Encontrados ${data.length} registros en ${tabla} por ${campoEquivalente}`);
+          
+          data.forEach(item => {
+            const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
+            console.log(`    📋 Revisando OS: ${itemOS}`);
+            
+            // Excluir solo la OS exacta que se está consultando
+            const esMismaOS = (selectedTable === tabla && itemOS === osNumero);
+
+            if (itemOS && !esMismaOS) {
+              // Verificar duplicados de manera más específica usando ID único o combinación de campos
+              const claveUnica = `${tabla}-${itemOS}-${item.CuentaContrato}-${item.Medidor}`;
+              const existe = relacionadasPorTabla[tabla].find(r => {
+                const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
+                const claveExistente = `${tabla}-${rOS}-${r.CuentaContrato}-${r.Medidor}`;
+                return claveExistente === claveUnica;
+              });
+              
+              if (!existe) {
+                relacionadasPorTabla[tabla].push({
+                  ...item, 
+                  criterioRelacion: criterio.campo,
+                  tablaOrigen: tabla
+                });
+                console.log(`    ✅ Agregada OS relacionada: ${itemOS} desde ${tabla} (criterio: ${criterio.campo})`);
+              } else {
+                console.log(`    ⏭️ OS ya existe: ${itemOS} en ${tabla}`);
+              }
+            } else if (esMismaOS) {
+              console.log(`    ⏭️ Misma OS original: ${itemOS}`);
+            } else {
+              console.log(`    ⏭️ OS sin número válido: ${itemOS}`);
+            }
+          });
+        } else {
+          console.log(`  ❌ No se encontraron registros en ${tabla} para ${campoEquivalente} = ${criterio.valor}`);
+        }
+      } catch (error) {
+        console.log(`❌ Error buscando en tabla ${tabla}:`, error);
         continue;
       }
-      
-      if (data && data.length > 0) {
-        console.log(`  ✅ Encontrados ${data.length} registros en ${tabla} por ${campoEquivalente}`);
-        
-        data.forEach(item => {
-          const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
-          console.log(`    📋 Revisando OS: ${itemOS}`);
-          
-          // Excluir solo la OS exacta que se está consultando
-          const esMismaOS = (selectedTable === tabla && itemOS === osNumero);
-
-          if (itemOS && !esMismaOS) {
-            // Verificar duplicados de manera más específica usando ID único o combinación de campos
-            const claveUnica = `${tabla}-${itemOS}-${item.CuentaContrato}-${item.Medidor}`;
-            const existe = relacionadasPorTabla[tabla].find(r => {
-              const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
-              const claveExistente = `${tabla}-${rOS}-${r.CuentaContrato}-${r.Medidor}`;
-              return claveExistente === claveUnica;
-            });
-            
-            if (!existe) {
-              relacionadasPorTabla[tabla].push({
-                ...item, 
-                criterioRelacion: criterio.campo,
-                tablaOrigen: tabla
-              });
-              console.log(`    ✅ Agregada OS relacionada: ${itemOS} desde ${tabla} (criterio: ${criterio.campo})`);
-            } else {
-              console.log(`    ⏭️ OS ya existe: ${itemOS} en ${tabla}`);
-            }
-          } else if (esMismaOS) {
-            console.log(`    ⏭️ Misma OS original: ${itemOS}`);
-          } else {
-            console.log(`    ⏭️ OS sin número válido: ${itemOS}`);
-          }
-        });
-      } else {
-        console.log(`  ❌ No se encontraron registros en ${tabla} para ${campoEquivalente} = ${criterio.valor}`);
-      }
-    } catch (error) {
-      console.log(`❌ Error buscando en tabla ${tabla}:`, error);
-      continue;
     }
-  }
-  
-  console.log(`📊 Total encontrado en ${tabla}: ${relacionadasPorTabla[tabla].length}`);
-      }
-    }
+    
+    console.log(`📊 Total encontrado en ${tabla}: ${relacionadasPorTabla[tabla].length}`);
   }
   
   ocultarIndicadorBusquedaAdicional();
@@ -2146,6 +2144,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
