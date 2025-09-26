@@ -1144,7 +1144,7 @@ function generarKMLString(ubicaciones) {
     iniciarVerificacionSesion();
 
     // Guardar sesión para persistencia
-    guardarDatosOffline();
+    mostrarTablasSegunRol();
 
     // Manejar visibilidad de la página
     document.addEventListener('visibilitychange', function() {
@@ -1156,6 +1156,32 @@ function generarKMLString(ubicaciones) {
   } catch (err) {
     console.error('Error de login:', err);
     alert('Error de conexión');
+  }
+}
+
+      function mostrarTablasSegunRol() {
+  const tableOptions = document.querySelectorAll('.table-option');
+  
+  if (currentUser.rol === 'Lectura') {
+    // Rol Lectura: Solo consultas_servicios
+    tableOptions.forEach(option => {
+      const onclick = option.getAttribute('onclick');
+      if (!onclick.includes('consultas_servicios')) {
+        option.style.display = 'none';
+      } else {
+        option.style.display = 'block';
+      }
+    });
+  } else if (currentUser.rol === 'Contratista') {
+    // Rol Contratista: Mantener funcionalidad actual (todas las tablas)
+    tableOptions.forEach(option => {
+      option.style.display = 'block';
+    });
+  } else {
+    // Rol Consulta y cualquier otro: Acceso completo (todas las tablas)
+    tableOptions.forEach(option => {
+      option.style.display = 'block';
+    });
   }
 }
 
@@ -1999,6 +2025,12 @@ function volverAResultadosPrincipales(tablaAnterior) {
     }
 
 function seleccionarTabla(tableName) {
+  // Verificar si el usuario tiene rol Lectura y solo permitir consultas_servicios
+  if (currentUser.rol === 'Lectura' && tableName !== 'consultas_servicios') {
+    alert('Su rol solo permite acceso a Consultas de Servicios');
+    return;
+  }
+
   selectedTable = tableName;
   const config = tableConfigs[tableName];
   document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
@@ -2055,12 +2087,13 @@ window.addEventListener('load', function() {
     
     // Verificar sesión offline
     if (!verificarDatosOffline()) {
-        document.getElementById('loginSection').style.display = 'block';
+        mostrarTablasSegunRol();
     }
 });
 </script>
 </body>
 </html>
+
 
 
 
