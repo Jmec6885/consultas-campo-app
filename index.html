@@ -1562,19 +1562,13 @@ async function buscarOSRelacionadas(osData) {
   mostrarIndicadorBusquedaAdicional();
   
   const relacionadasPorTabla = {};  // Nuevo: objeto agrupado {tabla: [items]}
-  // Reemplazar "const todasLasTablas = ..." por esto:
-let todasLasTablas;
-if (selectedTable === 'OS Pendientes' || selectedTable === 'OSCerradas') {
-  todasLasTablas = ['OS Pendientes', 'OSCerradas'];
-} else {
-  todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];  // Mantiene original para otras
-}
+  const todasLasTablas = ['consultas_servicios', 'OS Pendientes', 'OSCerradas'];
   
-  // Reemplazar el if de salto por esto:
-if (selectedTable !== 'OS Pendientes' && selectedTable !== 'OSCerradas' && selectedTable === tabla) {
-  console.log(`⏭️ Saltando tabla actual: ${tabla}`);
-  continue;
-}
+  for (const tabla of todasLasTablas) {
+    if (selectedTable === tabla) {
+      console.log(`⏭️ Saltando tabla actual: ${tabla}`);
+      continue;
+    }
     
     console.log(`🔍 Buscando en tabla: ${tabla}`);
     
@@ -2130,6 +2124,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
