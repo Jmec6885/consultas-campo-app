@@ -1565,79 +1565,75 @@ async function buscarOSRelacionadas(osData) {
   
   let tablasBusqueda = [];
 
-  if (selectedTable === 'OS Pendientes') {
-    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
-  } else if (selectedTable === 'OSCerradas') {
-    tablasBusqueda = ['OSCerradas', 'OS Pendientes'];
-  } else {
-    tablasBusqueda = [];
-  }
+if (selectedTable === 'OS Pendientes') {
+  tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+} else if (selectedTable === 'OSCerradas') {
+  tablasBusqueda = ['OSCerradas', 'OS Pendientes'];
+} else {
+  tablasBusqueda = [];
+}
 
-  for (const tabla of tablasBusqueda) {
-    if (selectedTable === tabla) {
-      console.log(`⏭️ Saltando tabla actual: ${tabla}`);
-      continue;
-    }
+for (const tabla of tablasBusqueda) {
+  console.log(`🔍 Buscando en tabla: ${tabla}`);
     
-    console.log(`🔍 Buscando en tabla: ${tabla}`);
-    
-    for (const criterio of criteriosBusqueda) {
-      try {
-        const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
-        if (!campoEquivalente) continue;
-        
-        console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
-        
-        const { data, error } = await supabaseClient
-          .from(tabla)
-          .select('*')
-          .eq(campoEquivalente, criterio.valor);
-        
-        if (error) {
-          console.log(`  ❌ Error en ${tabla}:`, error);
-          continue;
-        }
-        
-        if (data && data.length > 0) {
-          console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
-          
-          if (!relacionadasPorTabla[tabla]) {
-            relacionadasPorTabla[tabla] = [];
-          }
-          
-          data.forEach(item => {
-            const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
-            console.log(`    📋 Revisando OS: ${itemOS}`);
-            
-            if (itemOS && itemOS !== osNumero) {
-              const existe = relacionadasPorTabla[tabla].find(r => {
-                const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
-                return rOS === itemOS;
-              });
-              
-              if (!existe) {
-                relacionadasPorTabla[tabla].push({
-                  ...item, 
-                  criterioRelacion: criterio.campo,
-                  tablaOrigen: tabla
-                });
-                console.log(`    ✅ Agregada OS relacionada: ${itemOS}`);
-              } else {
-                console.log(`    ⏭️ OS ya existe en relacionadas: ${itemOS}`);
-              }
-            } else {
-              console.log(`    ⏭️ Misma OS o sin número: ${itemOS}`);
-            }
-          });
-        } else {
-          console.log(`  ❌ No se encontraron registros en ${tabla} para ${criterio.campo} = ${criterio.valor}`);
-        }
-      } catch (error) {
-        console.log(`❌ Error buscando en tabla ${tabla}:`, error);
+  for (const criterio of criteriosBusqueda) {
+    try {
+      const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
+      if (!campoEquivalente) continue;
+      
+      console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
+      
+      const { data, error } = await supabaseClient
+        .from(tabla)
+        .select('*')
+        .eq(campoEquivalente, criterio.valor);
+      
+      if (error) {
+        console.log(`  ❌ Error en ${tabla}:`, error);
         continue;
       }
+      
+      if (data && data.length > 0) {
+        console.log(`  ✅ Encontrados ${data.length} registros en ${tabla}`);
+        
+        if (!relacionadasPorTabla[tabla]) {
+          relacionadasPorTabla[tabla] = [];
+        }
+        
+        data.forEach(item => {
+          const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
+          console.log(`    📋 Revisando OS: ${itemOS}`);
+          
+          if (itemOS && itemOS !== osNumero) {
+            const existe = relacionadasPorTabla[tabla].find(r => {
+              const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
+              return rOS === itemOS;
+            });
+            
+            if (!existe) {
+              relacionadasPorTabla[tabla].push({
+                ...item, 
+                criterioRelacion: criterio.campo,
+                tablaOrigen: tabla
+              });
+              console.log(`    ✅ Agregada OS relacionada: ${itemOS}`);
+            } else {
+              console.log(`    ⏭️ OS ya existe en relacionadas: ${itemOS}`);
+            }
+          } else {
+            console.log(`    ⏭️ Misma OS o sin número: ${itemOS}`);
+          }
+        });
+      } else {
+        console.log(`  ❌ No se encontraron registros en ${tabla} para ${criterio.campo} = ${criterio.valor}`);
+      }
+    } catch (error) {
+      console.log(`❌ Error buscando en tabla ${tabla}:`, error);
+      continue;
     }
   }
+}
+
   
   ocultarIndicadorBusquedaAdicional();
   
@@ -2133,6 +2129,7 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
 
 
