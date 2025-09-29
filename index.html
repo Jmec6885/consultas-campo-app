@@ -522,7 +522,7 @@ if ('serviceWorker' in navigator) {
 // Cache datos importantes en localStorage (solo para datos de sesión)
 function guardarDatosOffline() {
     if (currentUser) {
-        sessionStorage.setItem('clesa_user_session', JSON.stringify({
+        sessionStorage.setItem('cleca_user_session', JSON.stringify({
             user: currentUser,
             timestamp: Date.now()
         }));
@@ -531,7 +531,7 @@ function guardarDatosOffline() {
 
 // Verificar datos offline al cargar
 function verificarDatosOffline() {
-    const sessionData = sessionStorage.getItem('clesa_user_session');
+    const sessionData = sessionStorage.getItem('cleca_user_session');
     if (sessionData) {
         const data = JSON.parse(sessionData);
         const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
@@ -680,6 +680,1580 @@ window.addEventListener('load', function() {
             </div>
         </div>
     </div>
+
+
+
+  <script>
+    const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null;
+    let selectedTable = null;
+    let consultasData = []; // Array para almacenar los datos de consultas
+
+    const tableConfigs = {
+     'consultas_servicios': {
+        title: 'Consultas de Servicios',
+        icon: '🏠',
+        fields: [
+          { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
+          { key: 'Medidor', label: 'Medidor', type: 'exact' },
+          { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
+        ],
+        resultFields: ['CuentaContrato', 'Medidor', 'NombreCliente', 'ComentarioGeneral'],
+        // ✅ Corregidos los nombres de acciones
+        actions: ['Coordenadas', 'Coordenadasgis', 'FotoLink', 'Grafica']
+      },
+      'Consumos': {
+        title: 'Consumos',
+        icon: '📊',
+        fields: [
+          { key: 'cuentacontrato', label: 'Cuenta/Contrato', type: 'exact' },
+          { key: 'medidor', label: 'Medidor', type: 'exact' }
+        ],
+        resultFields: ['cuentacontrato', 'medidor'],
+        actions: ['consumos']
+      },
+      'Coordenadas': {
+        title: 'Coordenadas',
+        icon: '📍',
+        fields: [
+          { key: 'Medidor', label: 'Medidor', type: 'exact' },
+          { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' }
+        ],
+        resultFields: ['Medidor', 'CuentaContrato'],
+        actions: ['CoordenadasLector', 'CoordenadasGis']
+      },
+      'OS Pendientes': {
+        title: 'OS Pendientes',
+        icon: '⏳',
+        fields: [
+          { key: 'OSATMO', label: 'OS ATOMO', type: 'exact' },
+          { key: 'OSSAP', label: 'OS SAP', type: 'exact' },
+          { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
+          { key: 'Medidor', label: 'Medidor', type: 'exact' },
+          { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
+        ],
+        resultFields: ['OSATMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
+        actions: ['Coordenadas', 'FotoLink', 'CoordenadasGis']
+      },
+      'OSCerradas': {
+        title: 'OS Cerradas',
+        icon: '✅',
+        fields: [
+          { key: 'OSATOMO', label: 'OS ATOMO', type: 'exact' },
+          { key: 'OSSAP', label: 'OS SAP', type: 'exact' },
+          { key: 'CuentaContrato', label: 'Cuenta/Contrato', type: 'exact' },
+          { key: 'Medidor', label: 'Medidor', type: 'exact' },
+          { key: 'NombreCliente', label: 'Nombre Cliente', type: 'like' }
+        ],
+        resultFields: ['OSATOMO', 'OSSAP', 'CuentaContrato', 'Medidor', 'NombreCliente', 'Comentario'],
+        actions: ['Coordenadas', 'FotoLink']
+      },
+      'TX y Cortes': {
+        title: 'TX y Cortes',
+        icon: '⚡',
+        fields: [
+          { key: 'TXCortes', label: 'TX/Cortes', type: 'like' },
+          { key: 'Circuitos', label: 'Circuitos', type: 'like' }
+        ],
+        resultFields: ['TXCortes', 'Circuitos', 'Comentario'],
+        actions: ['Coordenadas']
+      }
+    };
+
+    // ✅ Variables para las gráficas
+    let consumosChart = null;
+    let lecturasChart = null;
+
+    // ✅ Función para parsear datos de gráficas (consumos)
+    function parsearDatosGrafica(graficaData) {
+        if (!graficaData || graficaData.trim() === '') {
+            return { meses: [], lecturas: [], consumos: [] };
+        }
+
+        const meses = [], lecturas = [], consumos = [];
+        const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
+
+        for (const linea of lineas) {
+            const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
+            if (match) {
+                const [, mes, lectura, consumo] = match;
+                meses.push(mes);
+                lecturas.push(parseInt(lectura));
+                if (consumo !== undefined) {
+                    consumos.push(parseInt(consumo));
+                } else if (lecturas.length > 1) {
+                    const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
+                    consumos.push(Math.max(0, consumoCalculado));
+                } else {
+                    consumos.push(0);
+                }
+            }
+        }
+        return { meses, lecturas, consumos };
+    }
+
+    // ✅ Función para mostrar gráficas por índice
+    // Función para parsear datos de gráficas (consumos) sin cambiar ya que parece adecuada
+function parsearDatosGrafica(graficaData) {
+    if (!graficaData || graficaData.trim() === '') {
+        return { meses: [], lecturas: [], consumos: [] };
+    }
+
+    const meses = [], lecturas = [], consumos = [];
+    const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
+
+    for (const linea of lineas) {
+        const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
+        if (match) {
+            const [, mes, lectura, consumo] = match;
+            meses.push(mes);
+            lecturas.push(parseInt(lectura));
+            if (consumo !== undefined) {
+                consumos.push(parseInt(consumo));
+            } else if (lecturas.length > 1) {
+                const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
+                consumos.push(Math.max(0, consumoCalculado));
+            } else {
+                consumos.push(0);
+            }
+        }
+    }
+    return { meses, lecturas, consumos };
+}
+
+// Función para mostrar gráficas por índice con uso correcto del dato grafica
+function verGraficasPorIndice(dataIndex) {
+    if (dataIndex === undefined || dataIndex < 0 || dataIndex >= consultasData.length) {
+        alert('Datos de gráfica no disponibles');
+        return;
+    }
+    const item = consultasData[dataIndex];
+    verGraficas(item.Grafica || item.grafica || '', item.NombreCliente || 'Cliente', item.CuentaContrato || 'N/A');
+}
+
+// Función para mostrar gráficas usando datos dinámicos de la fila sin caer en ejemplo estático salvo que no haya datos en absoluto
+function verGraficas(graficaData, nombreCliente, cuentaContrato) {
+    try {
+        const modal = document.getElementById('chartsModal');
+        const modalTitle = document.getElementById('modalTitle');
+        modalTitle.textContent = `Gráficas - ${nombreCliente} (Cuenta: ${cuentaContrato})`;
+        modal.style.display = 'block';
+
+        // Parsear los datos dinámicos
+        const datos = parsearDatosGrafica(graficaData);
+
+        // Solo si no hay ningún dato válido mostramos mensaje o ejemplo muy discreto
+        if (datos.meses.length === 0) {
+            alert('No hay datos de consumo y lectura disponibles para esta fila.');
+            cerrarGraficas();
+            return;
+        }
+
+        // Destruir gráficos previos si existen
+        if (consumosChart) consumosChart.destroy();
+        if (lecturasChart) lecturasChart.destroy();
+
+        // Crear las gráficas con los datos extraídos de la fila
+        setTimeout(() => { crearGraficas(datos); }, 100);
+
+    } catch (error) {
+        console.error('❌ Error mostrando gráficas:', error);
+        alert('Error mostrando las gráficas. Por favor intente de nuevo.');
+    }
+}
+
+
+    // ✅ Función para crear gráficas
+    function crearGraficas(datos) {
+        try {
+            const ctxConsumos = document.getElementById('consumosChart');
+            if (ctxConsumos) {
+                consumosChart = new Chart(ctxConsumos, {
+                    type: 'bar',
+                    data: {
+                        labels: datos.meses,
+                        datasets: [{
+                            label: 'Consumo (kWh)',
+                            data: datos.consumos,
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 2,
+                            borderRadius: 5,
+                            borderSkipped: false,
+                        }]
+                    },
+                    plugins: [ChartDataLabels], // ✅ Activar plugin de etiquetas
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: true, position: 'top'},
+                            // ✅ Configuración de etiquetas de datos
+                            datalabels: {
+                                display: true,
+                                anchor: 'end',
+                                align: 'top',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
+                                },
+                                color: '#2d3748',
+                                formatter: function(value) {
+                                    return value + ' kWh';
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} kWh`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {display: true, text: 'Consumo (kWh)'},
+                                // ✅ Agregar espacio extra arriba para las etiquetas
+                                suggestedMax: function(context) {
+                                    const max = Math.max(...datos.consumos);
+                                    return max * 1.15; // 15% más de espacio
+                                }
+                            },
+                            x: {title: {display: true, text: 'Mes'}}
+                        }
+                    }
+                });
+            }
+
+            const ctxLecturas = document.getElementById('lecturasChart');
+            if (ctxLecturas) {
+                lecturasChart = new Chart(ctxLecturas, {
+                    type: 'line',
+                    data: {
+                        labels: datos.meses,
+                        datasets: [{
+                            label: 'Lectura Acumulada',
+                            data: datos.lecturas,
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 8, // ✅ Puntos un poco más grandes
+                            pointHoverRadius: 10
+                        }]
+                    },
+                    plugins: [ChartDataLabels], // ✅ Activar plugin de etiquetas
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: true, position: 'top'},
+                            // ✅ Configuración de etiquetas de datos para líneas
+                            datalabels: {
+                                display: true,
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 5,
+                                font: {
+                                    weight: 'bold',
+                                    size: 11
+                                },
+                                color: '#2d3748',
+                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                borderColor: 'rgba(118, 75, 162, 0.5)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                padding: 3,
+                                formatter: function(value) {
+                                    return value.toLocaleString() + ' kWh';
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} kWh`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {display: true, text: 'Lectura Acumulada (kWh)'},
+                                ticks: {callback: function(value){return value.toLocaleString();}},
+                                // ✅ Agregar espacio extra arriba para las etiquetas
+                                suggestedMax: function(context) {
+                                    const max = Math.max(...datos.lecturas);
+                                    return max * 1.1; // 10% más de espacio
+                                }
+                            },
+                            x: {title: {display: true, text: 'Mes'}}
+                        }
+                    }
+                });
+            }
+
+            console.log('✅ Gráficas creadas exitosamente');
+
+        } catch (error) {
+            console.error('❌ Error creando gráficas:', error);
+        }
+    }
+
+    // ✅ Función para cerrar gráficas
+    function cerrarGraficas() {
+        document.getElementById('chartsModal').style.display = 'none';
+        if (consumosChart) { consumosChart.destroy(); consumosChart = null; }
+        if (lecturasChart) { lecturasChart.destroy(); lecturasChart = null; }
+    }
+
+    // ✅ Cerrar modal al hacer click fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('chartsModal');
+        if (event.target === modal) cerrarGraficas();
+    }
+
+    // Funciones para descarga KML
+function descargarKML() {
+    if (consultasData.length === 0) {
+        alert('No hay datos para descargar');
+        return;
+    }
+
+    const ubicaciones = [];
+    consultasData.forEach((item, index) => {
+        const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+        if (coordenadas) {
+            const etiqueta = item.NombreCliente || item.CuentaContrato || item.Medidor || `Punto ${index + 1}`;
+            ubicaciones.push({ etiqueta, coordenadas });
+        }
+    });
+
+    if (ubicaciones.length === 0) {
+        alert('No se encontraron coordenadas válidas para descargar');
+        return;
+    }
+
+    const kmlString = generarKMLString(ubicaciones);
+    const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coordenadas_${selectedTable}_${new Date().getTime()}.kml`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function generarKMLString(ubicaciones) {
+    if (!Array.isArray(ubicaciones) || ubicaciones.length === 0) {
+        throw new Error("No se enviaron ubicaciones válidas para el KML.");
+    }
+    
+    let kml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n';
+    kml += '<name>Coordenadas de búsqueda CLESA</name>\n';
+
+    ubicaciones.forEach(({ etiqueta, coordenadas }) => {
+        const parts = coordenadas.split(',').map(s => s.trim());
+        let coordsForKML;
+        if (parts.length >= 2) {
+            coordsForKML = `${parts[1]},${parts[0]}`;
+            if (parts.length === 3) {
+                coordsForKML += `,${parts[2]}`;
+            }
+        } else {
+            coordsForKML = coordenadas.replace(/\s+/g, '');
+        }
+
+        kml += '<Placemark>\n';
+        kml += `<name>${etiqueta}</name>\n`;
+        kml += `<Point><coordinates>${coordsForKML}</coordinates></Point>\n`;
+        kml += '</Placemark>\n';
+    });
+
+    kml += '</Document>\n</kml>';
+    return kml;
+}
+
+    async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!username || !password) {
+    alert('Por favor ingrese usuario y contraseña');
+    return;
+  }
+
+  try {
+    const { data: existingSession, error: sessionError } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('sessionactiva', true)
+      .maybeSingle();
+
+    if (existingSession) {
+      const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
+      if (!confirmar) return;
+
+      await supabaseClient
+        .from('usuarios')
+        .update({ sessionactiva: false, sessiontoken: null })
+        .eq('usuario', username);
+    }
+
+    const { data, error } = await supabaseClient
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', username)
+      .eq('password', password)
+      .eq('activo', true)
+      .single();
+
+    if (error || !data) {
+      alert('Usuario o contraseña incorrectos');
+      return;
+    }
+
+    const sessionToken = btoa(username + Date.now() + Math.random());
+
+    await supabaseClient
+      .from('usuarios')
+      .update({
+        sessionactiva: true,
+        sessiontoken: sessionToken,
+        ultimaconexion: new Date().toISOString()
+      })
+      .eq('id', data.id);
+
+    currentUser = { ...data, session_token: sessionToken };
+
+    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('tableSelectionSection').style.display = 'block';
+
+    iniciarVerificacionSesion();
+
+    // Guardar sesión para persistencia
+    mostrarTablasSegunRol();
+
+    // Manejar visibilidad de la página
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && currentUser) {
+        renovarSesion();
+      }
+    });
+
+  } catch (err) {
+    console.error('Error de login:', err);
+    alert('Error de conexión');
+  }
+}
+
+      function mostrarTablasSegunRol() {
+     if (!currentUser || !currentUser.rol) {
+    console.log('❌ currentUser no está disponible');
+    return;
+  }
+  const tableOptions = document.querySelectorAll('.table-option');
+  
+  if (currentUser.rol === 'Lectura') {
+    // Rol Lectura: Solo consultas_servicios
+    tableOptions.forEach(option => {
+      const onclick = option.getAttribute('onclick');
+      if (!onclick.includes('consultas_servicios')) {
+        option.style.display = 'none';
+      } else {
+        option.style.display = 'block';
+      }
+    });
+  } else if (currentUser.rol === 'Contratista') {
+    // Rol Contratista: Mantener funcionalidad actual (todas las tablas)
+    tableOptions.forEach(option => {
+      option.style.display = 'block';
+    });
+  } else {
+    // Rol Consulta y cualquier otro: Acceso completo (todas las tablas)
+    tableOptions.forEach(option => {
+      option.style.display = 'block';
+    });
+  }
+}
+
+function iniciarVerificacionSesion() {
+  setInterval(async () => {
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('sessionactiva, sessiontoken, ultimaconexion')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
+        if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
+          alert('Su sesión ha sido iniciada en otro dispositivo.');
+          logout();
+        }
+        return;
+      }
+
+      const ultima = new Date(data.ultimaconexion);
+      const ahora = new Date();
+      const diffMin = (ahora - ultima) / 1000 / 60;
+
+      if (diffMin > 45) {
+        alert('Su sesión ha expirado por inactividad.');
+        logout();
+      }
+    } catch (err) {
+      console.error('Error verificando sesión:', err);
+    }
+  }, 30000);
+}
+
+async function renovarSesion() {
+  if (!currentUser) return;
+  await supabaseClient
+    .from('usuarios')
+    .update({ ultimaconexion: new Date().toISOString() })
+    .eq('id', currentUser.id);
+}
+
+async function logout() {
+  sessionStorage.removeItem('cleca_user_session');
+  if (currentUser) {
+    await supabaseClient
+      .from('usuarios')
+      .update({ sessionactiva: false, sessiontoken: null })
+      .eq('id', currentUser.id);
+  }
+
+  currentUser = null;
+  selectedTable = null;
+
+  document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'none';
+
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
+
+    function generarCamposBusqueda(config) {
+      const searchGrid = document.getElementById('searchGrid');
+      let html = '';
+      config.fields.forEach(field => {
+        html += `
+          <div class="form-group">
+            <label>${field.label}:</label>
+            <input type="text" id="search${field.key}" placeholder="Ingrese ${field.label.toLowerCase()}" />
+            <button class="btn btn-secondary" onclick="buscar('${field.key}', '${field.type}')">🔍 Buscar</button>
+          </div>
+        `;
+      });
+      searchGrid.innerHTML = html;
+    }
+
+    function volverATablas() {
+      document.getElementById('searchSection').style.display = 'none';
+      document.getElementById('tableSelectionSection').style.display = 'block';
+      document.getElementById('searchResults').innerHTML = '';
+      selectedTable = null;
+    }
+
+    async function buscar(campo, tipo) {
+  await renovarSesion();
+  await capturarCoordenadasGPS();
+  
+  const valor = document.getElementById(`search${campo}`).value.trim();
+  if (!valor) {
+    alert(`Por favor ingrese un valor para ${campo}`);
+    return;
+  }
+
+  const valores = valor.includes(',') ? valor.split(',').map(v => v.trim()).filter(v => v) : [valor];
+  
+  if (valores.length > 1) {
+    await busquedaMultipleKML(campo, valores);
+  } else {
+    // Búsqueda principal inmediata
+    let query = supabaseClient.from(selectedTable).select('*');
+    if (tipo === 'exact') query = query.eq(campo, valor);
+    else query = query.ilike(campo, `%${valor}%`);
+
+    const { data, error } = await query;
+    if (error) {
+      alert('Error al buscar: ' + error.message);
+      return;
+    }
+    
+    // Mostrar resultados principales inmediatamente
+    mostrarResultados(data || []);
+    
+    // Si estamos en consultas_servicios, iniciar búsqueda adicional
+    if (selectedTable === 'consultas_servicios') {
+      busquedaAdicionalProgresiva(campo, valor);
+    }
+  }
+}
+    function mostrarResultados(resultados) {
+  const container = document.getElementById('searchResults');
+  const config = tableConfigs[selectedTable];
+  
+  // Guardamos los datos para uso posterior
+  consultasData = resultados;
+
+  if (resultados.length === 0) {
+    container.innerHTML = '<div class="result-card">❌ No se encontraron resultados</div>';
+    return;
+  }
+
+  let html = `<div class="result-header">✅ Se encontraron ${resultados.length} resultado(s)</div>`;
+  
+  resultados.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      
+      // Formatear especialmente el campo Comentario
+      if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') { 
+        // Reemplazar patrones comunes para mejorar legibilidad
+        valor = valor
+          .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>') // *texto* -> negrita con salto
+          .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
+          .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
+          .replace(/Medidor según SAP/g, '<br><strong>Medidor según SAP:</strong>')
+          .replace(/Cantidad OS/g, '<br><strong>Cantidad OS:</strong>')
+          .replace(/Comentario Generacion/g, '<br><strong>Comentario Generación:</strong>')
+          .replace(/Comentario Incumplida o Adicional/g, '<br><strong>Comentario Incumplida o Adicional:</strong>')
+          .replace(/Comentario de Visita Fallida/g, '<br><strong>Comentario de Visita Fallida:</strong>')
+          .replace(/Comentario de visita Anterior/g, '<br><strong>Comentario de visita Anterior:</strong>')
+          .replace(/Foto Medidor o Suministr/g, '<br><strong>Foto Medidor o Suministro:</strong>')
+          .replace(/Coordenas Contiguo Previa/g, '<br><strong>Coordenadas Contiguo Previa:</strong>')
+          .replace(/Coordenadas Visita Anterior/g, '<br><strong>Coordenadas Visita Anterior:</strong>')
+          .replace(/Coordeadas lector/g, '<br><strong>Coordenadas lector:</strong>')
+          .replace(/Coordenadas de OS según ATOMO/g, '<br><strong>Coordenadas de OS según ATOMO:</strong>')
+          .replace(/Fecha Eje\. OS anterior/g, '<br><strong>Fecha Eje. OS anterior:</strong>')
+          .replace(/Unidad que Eje\. OS Anterior/g, '<br><strong>Unidad que Eje. OS Anterior:</strong>')
+          .replace(/Dias (\d+)/g, '<br><strong>Días:</strong> $1')
+          .replace(/lectura[:\s]*(\d+)/gi, '<br><strong>Lectura:</strong> $1')
+          .replace(/Sin Datos/g, '<br><em>Sin Datos</em>')
+          .replace(/Sin Comentario/g, '<br><em>Sin Comentario</em>')
+          .replace(/Sin Coordenadas/g, '<br><em>Sin Coordenadas</em>')
+          .replace(/Sin Foto/g, '<br><em>Sin Foto</em>')
+          .replace(/Nombre del Cliente/g, '<br><strong>Nombre del Cliente:</strong>')
+          .replace(/Cuenta contrato/g, '<br><strong>Cuenta contrato:</strong>')
+          .replace(/Dirección del cliente/g, '<br><strong>Dirección del cliente:</strong>')
+          .replace(/Medidor (\d+)/g, '<br><strong>Medidor:</strong> $1')
+          .replace(/Numero de OS/g, '<br><strong>Número de OS:</strong>')
+          .replace(/Tipologia/g, '<br><strong>Tipología:</strong>')
+          .replace(/Comentario de Cierre/g, '<br><strong>Comentario de Cierre:</strong>')
+          .replace(/coordenadas del suministro/g, '<br><strong>Coordenadas del suministro:</strong>')
+          .replace(/Comentario de Generacion/g, '<br><strong>Comentario de Generación:</strong>')
+          .replace(/Coordenadas De cierre/g, '<br><strong>Coordenadas De cierre:</strong>')
+          .replace(/Fecha Ejec/g, '<br><strong>Fecha Ejec:</strong>')
+          .replace(/Ejecutada por/g, '<br><strong>Ejecutada por:</strong>')
+          .replace(/Nombre Cliente/g, '<br><em>Nombre Cliente</em>')
+          .replace(/Cuenta Contrato/g, '<br><em>Cuenta Contrato</em>')
+          .replace(/Direccion/g, '<br><em>Direccion</em>')
+          .replace(/Tarifa/g, '<br><em>Tarifa</em>')
+          .replace(/Medidor/g, '<br><em>Medidor</em>')
+          .replace(/Fecha Lect/g, '<br><em>Fecha Lect</em>')
+          .replace(/Proteccion que lo Alimenta/g, '<br><em>Proteccion que lo Alimenta</em>')
+          .replace(/Propiedad/g, '<br><em>Propiedad</em>')
+          .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+          .replace(/Capacidad Sum/g, '<br><em>Capacidad Sum</em>')
+          .replace(/Circuito/g, '<br><em>Circuito</em>')
+          .replace(/Uicacion/g, '<br><em>Uicacion</em>')
+          .replace(/Cantidad de clientes/g, '<br><em>Cantidad de clientes</em>')
+          .replace(/Estructura Tx/g, '<br><em>Estructura Tx</em>')
+          .replace(/Primary Phase ConcatSet/g, '<br><em>Primary Phase ConcatSet</em>')
+          .replace(/Usos/g, '<br><em>Usos</em>')
+          .replace(/Voltaje/g, '<br><em>Voltaje</em>')
+          .replace(/Voltaje Primario Nominal/g, '<br><em>Voltaje Primario Nominal</em>')
+          .replace(/Estructura/g, '<br><em>Estructura</em>')
+          .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
+          .replace(/Municipio/g, '<br><em>Municipio</em>')
+          .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
+        
+        html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
+      } else {
+        html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+      }
+    });
+    
+    // Verificar si es una búsqueda por OS para buscar relacionadas (solo en consultas_servicios)
+    // Verificar si es una búsqueda por OS para buscar relacionadas (en todas las tablas de OS)
+if ((selectedTable === 'consultas_servicios' || selectedTable === 'OS Pendientes' || selectedTable === 'OSCerradas') && 
+    (item.OSATMO || item.OSSAP || item.OSATOMO)) {
+  setTimeout(() => {
+    buscarOSRelacionadas(item).then(relacionadas => {
+      if (relacionadas) {
+        mostrarOSRelacionadas(relacionadas, 'OS');
+      }
+    });
+  }, 2000);
+}
+    
+    html += '<div class="action-buttons">';
+    
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+
+      // ROLES:
+      // - Lectura: Solo coordenadas y foto en consultas_servicios
+      // - Contratista: Todo excepto gráficas
+      // - Consulta (o cualquier otro): Acceso completo
+      
+      if (currentUser.rol === 'Lectura') {
+        // Solo mostrar coordenadas y foto para rol Lectura, solo en consultas_servicios
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      } else if (currentUser.rol === 'Contratista') {
+        // Contratista ve todo excepto gráficas
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+          // No mostrar gráficas para contratista
+        } else if (selectedTable === 'TX y Cortes') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+          }
+        } else {
+          // Otras tablas para contratista
+          if (action.toLowerCase().includes('coordenadas')) {
+            if (action === 'CoordenadasLector') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            } else if (action === 'CoordenadasGis') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+            } else {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            }
+          } else if (action === 'FotoLink' || action === 'fotolink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      } else {
+        // Rol Consulta o cualquier otro - Acceso completo
+        if (selectedTable === 'consultas_servicios') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+          } else if (action === 'Coordenadasgis') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+          } else if (action === 'FotoLink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          } else if (action === 'Grafica') {
+            html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
+          }
+        } else if (selectedTable === 'TX y Cortes') {
+          if (action === 'Coordenadas') {
+            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+          }
+        } else {
+          // Otras tablas - acceso completo
+          if (action.toLowerCase().includes('coordenadas')) {
+            if (action === 'CoordenadasLector') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            } else if (action === 'CoordenadasGis') {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+            } else {
+              html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+            }
+          } else if (action === 'FotoLink' || action === 'fotolink') {
+            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+          }
+        }
+      }
+    });
+    
+    html += '</div></div>';
+  });
+
+  // Verificar si hay coordenadas válidas antes de mostrar el botón KML
+  const tieneCoordenadasValidas = resultados.some(item => {
+    const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+    return coordenadas && coordenadas.includes(',');
+  });
+
+  if (tieneCoordenadasValidas) {
+    html += '<div style="margin-top: 20px; text-align: center; padding: 0 10px;">';
+    html += '<button class="btn btn-secondary" onclick="descargarKML()" style="width: 100%; max-width: 280px;">📥 Descargar KML</button>';
+    html += '</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+async function buscarOSRelacionadas(osData) {
+  const osNumero = osData.OSATMO || osData.OSSAP || osData.OSATOMO;
+  if (!osNumero) return null;
+  
+  console.log('=== DEBUG OS RELACIONADAS ===');
+  console.log('OS Original:', osNumero);
+  console.log('Datos originales:', osData);
+  
+  const criteriosBusqueda = [];
+  
+  // Verificar CuentaContrato
+  console.log('CuentaContrato:', osData.CuentaContrato, 'Tipo:', typeof osData.CuentaContrato);
+  if (osData.CuentaContrato && 
+      String(osData.CuentaContrato).trim() !== '' && 
+      String(osData.CuentaContrato) !== '0' && 
+      String(osData.CuentaContrato) !== '200000000000') {
+    criteriosBusqueda.push({campo: 'CuentaContrato', valor: osData.CuentaContrato});
+    console.log('✓ CuentaContrato válido:', osData.CuentaContrato);
+  } else {
+    console.log('✗ CuentaContrato filtrado');
+  }
+  
+  // Verificar Medidor
+  console.log('Medidor:', osData.Medidor, 'Tipo:', typeof osData.Medidor);
+  if (osData.Medidor && 
+      String(osData.Medidor).trim() !== '' && 
+      String(osData.Medidor) !== '0') {
+    criteriosBusqueda.push({campo: 'Medidor', valor: osData.Medidor});
+    console.log('✓ Medidor válido:', osData.Medidor);
+  } else {
+    console.log('✗ Medidor filtrado');
+  }
+  
+  // Verificar NombreCliente
+  console.log('NombreCliente:', osData.NombreCliente, 'Tipo:', typeof osData.NombreCliente);
+  if (osData.NombreCliente && 
+      String(osData.NombreCliente).trim() !== '' && 
+      String(osData.NombreCliente) !== '0' &&
+      String(osData.NombreCliente).toLowerCase() !== 'sin nombre') {
+    criteriosBusqueda.push({campo: 'NombreCliente', valor: osData.NombreCliente});
+    console.log('✓ NombreCliente válido:', osData.NombreCliente);
+  } else {
+    console.log('✗ NombreCliente filtrado');
+  }
+  
+  console.log('Criterios de búsqueda finales:', criteriosBusqueda);
+  
+  if (criteriosBusqueda.length === 0) {
+    console.log('❌ No hay criterios válidos para buscar');
+    return null;
+  }
+  
+  // Mostrar indicador de carga  
+  mostrarIndicadorBusquedaAdicional();
+  
+  const relacionadasPorTabla = {};
+  
+  let tablasBusqueda = [];
+
+  if (selectedTable === 'OS Pendientes') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else if (selectedTable === 'OSCerradas') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else if (selectedTable === 'consultas_servicios') {
+    tablasBusqueda = ['OS Pendientes', 'OSCerradas'];
+  } else {
+    tablasBusqueda = [];
+  }
+
+  for (const tabla of tablasBusqueda) {
+    console.log(`🔍 Buscando en tabla: ${tabla}`);
+    
+    // Inicializar el array de esta tabla una sola vez
+    if (!relacionadasPorTabla[tabla]) {
+      relacionadasPorTabla[tabla] = [];
+    }
+      
+    for (const criterio of criteriosBusqueda) {
+      try {
+        const campoEquivalente = encontrarCampoEquivalente(criterio.campo, tableConfigs[tabla]);
+        if (!campoEquivalente) continue;
+        
+        console.log(`  🔎 Buscando por ${campoEquivalente} = ${criterio.valor}`);
+        
+        const { data, error } = await supabaseClient
+          .from(tabla)
+          .select('*')
+          .eq(campoEquivalente, criterio.valor);
+        
+        if (error) {
+          console.log(`  ❌ Error en ${tabla}:`, error);
+          continue;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`  ✅ Encontrados ${data.length} registros en ${tabla} por ${campoEquivalente}`);
+          
+          data.forEach(item => {
+            const itemOS = item.OSATMO || item.OSSAP || item.OSATOMO;
+            console.log(`    📋 Revisando OS: ${itemOS}`);
+            
+            // Excluir solo la OS exacta que se está consultando
+            const esMismaOS = (selectedTable === tabla && itemOS === osNumero);
+
+            if (itemOS && !esMismaOS) {
+              // Verificar duplicados de manera más específica usando ID único o combinación de campos
+              const claveUnica = `${tabla}-${itemOS}-${item.CuentaContrato}-${item.Medidor}`;
+              const existe = relacionadasPorTabla[tabla].find(r => {
+                const rOS = r.OSATMO || r.OSSAP || r.OSATOMO;
+                const claveExistente = `${tabla}-${rOS}-${r.CuentaContrato}-${r.Medidor}`;
+                return claveExistente === claveUnica;
+              });
+              
+              if (!existe) {
+                relacionadasPorTabla[tabla].push({
+                  ...item, 
+                  criterioRelacion: criterio.campo,
+                  tablaOrigen: tabla
+                });
+                console.log(`    ✅ Agregada OS relacionada: ${itemOS} desde ${tabla} (criterio: ${criterio.campo})`);
+              } else {
+                console.log(`    ⏭️ OS ya existe: ${itemOS} en ${tabla}`);
+              }
+            } else if (esMismaOS) {
+              console.log(`    ⏭️ Misma OS original: ${itemOS}`);
+            } else {
+              console.log(`    ⏭️ OS sin número válido: ${itemOS}`);
+            }
+          });
+        } else {
+          console.log(`  ❌ No se encontraron registros en ${tabla} para ${campoEquivalente} = ${criterio.valor}`);
+        }
+      } catch (error) {
+        console.log(`❌ Error buscando en tabla ${tabla}:`, error);
+        continue;
+      }
+    }
+    
+    console.log(`📊 Total encontrado en ${tabla}: ${relacionadasPorTabla[tabla].length}`);
+  }
+  
+  ocultarIndicadorBusquedaAdicional();
+  
+  console.log('=== RESULTADO FINAL ===');
+  console.log('Total OS relacionadas encontradas por tabla:', Object.keys(relacionadasPorTabla).length);
+  console.log('OS relacionadas:', relacionadasPorTabla);
+  console.log('========================');
+  
+  return Object.keys(relacionadasPorTabla).length > 0 ? relacionadasPorTabla : null;
+}
+
+
+      function mostrarOSRelacionadas(relacionadasPorTabla, criterioOriginal) {
+  if (!relacionadasPorTabla || Object.keys(relacionadasPorTabla).length === 0) {
+    console.log('❌ No hay relacionadas para mostrar');
+    return;
+  }
+  
+  console.log('📊 Mostrando relacionadas:', relacionadasPorTabla);
+  
+  // Almacenar en una variable global específica para OS relacionadas
+  window.resultadosAdicionalesOS = relacionadasPorTabla;
+  
+  const container = document.getElementById('searchResults');
+  let botonesHtml = `
+    <div class="result-card" style="background: #fff3cd; border: 2px solid #ffc107; margin-top: 15px;">
+      <div class="result-header">🔗 OS Relacionadas Encontradas</div>
+      <p>Se encontraron OS adicionales en otras tablas. Haz clic para ver detalles completos:</p>
+      <div class="action-buttons">
+  `;
+  
+  for (const [tabla, datos] of Object.entries(relacionadasPorTabla)) {
+    const config = tableConfigs[tabla];
+    const icono = config ? config.icon : '📋';
+    console.log(`👀 Tabla ${tabla}: ${datos.length} registros`);
+    botonesHtml += `
+      <button class="btn btn-secondary" onclick="mostrarResultadosAdicionalesOS('${tabla}')">
+        ${icono} Ver OS en ${config.title} (${datos.length})
+      </button>
+    `;
+  }
+  
+  botonesHtml += `</div></div>`;
+  container.innerHTML += botonesHtml;
+}
+
+      function mostrarResultadosAdicionalesOS(tabla) {
+  if (!window.resultadosAdicionalesOS || !window.resultadosAdicionalesOS[tabla]) {
+    alert('No hay datos disponibles');
+    return;
+  }
+  
+  const datos = window.resultadosAdicionalesOS[tabla];
+  const config = tableConfigs[tabla];
+  
+  // *** CAMBIO CLAVE: No cambiar selectedTable ***
+  // const tablaAnterior = selectedTable;
+  // selectedTable = tabla;
+  
+  // Crear un contenedor separado para mostrar las relacionadas
+  const container = document.getElementById('searchResults');
+  
+  // Guardar el contenido actual antes de reemplazarlo
+  const contenidoOriginal = container.innerHTML;
+  
+  let html = `
+    <div class="result-card" style="background: #e3f2fd; border: 2px solid #2196f3;">
+      <div class="result-header">📋 ${config.title} - OS Relacionadas</div>
+      <div style="margin-bottom: 15px; text-align: center;">
+        <button class="btn btn-back" onclick="restaurarResultadosOriginales()">
+          ← Volver a Resultados Principales
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Crear resultados usando la configuración de la tabla relacionada temporalmente
+  const selectedTableOriginal = selectedTable;
+  selectedTable = tabla; // Cambio temporal solo para mostrarResultados
+  
+  datos.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Relacionada ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+    });
+    
+    html += '<div class="action-buttons">';
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+      
+      if (action.toLowerCase().includes('coordenadas')) {
+        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
+      } else if (action === 'FotoLink' || action === 'fotolink') {
+        html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+      }
+    });
+    html += '</div></div>';
+  });
+  
+  // Restaurar selectedTable original
+  selectedTable = selectedTableOriginal;
+  
+  // Guardar el contenido original para poder restaurarlo
+  window.contenidoOriginalBusqueda = contenidoOriginal;
+  
+  container.innerHTML = html;
+}
+
+async function capturarCoordenadasGPS() {
+  if (!navigator.geolocation) {
+    return;
+  }
+  
+  try {
+    const posicion = await new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 2000);
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          clearTimeout(timeoutId);
+          resolve(pos);
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 1500,
+          maximumAge: 600000
+        }
+      );
+    });
+    
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const coordenadas = `${lat},${lng}`;
+    const timestamp = new Date().toISOString();
+    
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadas,
+          ultimaconexion: timestamp
+        })
+        .eq('id', currentUser.id);
+    }
+    
+  } catch (error) {
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ ultimaconexion: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+  }
+}
+
+      function restaurarResultadosOriginales() {
+  const container = document.getElementById('searchResults');
+  if (window.contenidoOriginalBusqueda) {
+    container.innerHTML = window.contenidoOriginalBusqueda;
+    // Limpiar la variable temporal
+    delete window.contenidoOriginalBusqueda;
+  } else {
+    container.innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+  }
+}
+      async function busquedaMultipleKML(campo, valores) {
+  const resultadosEncontrados = [];
+  const noEncontrados = [];
+  
+  for (const valor of valores) {
+    let query = supabaseClient.from(selectedTable).select('*');
+    query = query.eq(campo, valor);
+    
+    const { data, error } = await query;
+    if (data && data.length > 0) {
+      resultadosEncontrados.push(...data);
+    } else {
+      noEncontrados.push(valor);
+    }
+  }
+  
+  // Guardar resultados para KML
+  window.resultadosKML = resultadosEncontrados;
+  
+  const container = document.getElementById('searchResults');
+  let html = `
+    <div class="result-card">
+      <div class="result-header">📍 Búsqueda Múltiple para KML</div>
+      <p><strong>Total buscados:</strong> ${valores.length}</p>
+      <p><strong>Encontrados:</strong> ${resultadosEncontrados.length}</p>
+      <p><strong>No encontrados:</strong> ${noEncontrados.length}</p>
+  `;
+  
+  if (noEncontrados.length > 0) {
+    html += `<p><strong>Valores no encontrados:</strong> ${noEncontrados.join(', ')}</p>`;
+  }
+  
+  html += `
+      <div class="action-buttons" style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="generarKMLMultiple()" id="btnGenerarKML">
+          🗺️ Generar KML
+        </button>
+        <button class="btn btn-secondary hidden" onclick="descargarKMLGenerado()" id="btnDescargarKML">
+          📥 Descargar KML
+        </button>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+
+
+async function generarKMLMultiple() {
+  const btnGenerar = document.getElementById('btnGenerarKML');
+  const btnDescargar = document.getElementById('btnDescargarKML');
+  
+  btnGenerar.innerHTML = '⏳ Generando KML...';
+  btnGenerar.disabled = true;
+  
+  try {
+    const ubicaciones = [];
+    
+    window.resultadosKML.forEach((item, index) => {
+      const coordenadas = item.Coordenadas || item.coordenadas || item.Coordenadasgis || item.coordenadasgis;
+      if (coordenadas && coordenadas.includes(',')) {
+        const etiqueta = item.NombreCliente || item.CuentaContrato || item.Medidor || `Punto ${index + 1}`;
+        ubicaciones.push({ etiqueta, coordenadas });
+      }
+    });
+    
+    if (ubicaciones.length === 0) {
+      alert('No se encontraron coordenadas válidas en los resultados');
+      btnGenerar.innerHTML = '🗺️ Generar KML';
+      btnGenerar.disabled = false;
+      return;
+    }
+    
+    // Simular procesamiento
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    window.kmlGenerado = generarKMLString(ubicaciones);
+    
+    btnGenerar.innerHTML = '✅ KML Generado';
+    btnDescargar.classList.remove('hidden');
+    
+    // Guardar coordenadas en BD del usuario
+    if (currentUser) {
+      const coordenadasTexto = ubicaciones.map(u => `${u.etiqueta}: ${u.coordenadas}`).join('\n');
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadasTexto,
+          ultimaconexion: new Date().toISOString()
+        })
+        .eq('id', currentUser.id);
+    }
+    
+  } catch (error) {
+    alert('Error generando KML: ' + error.message);
+    btnGenerar.innerHTML = '🗺️ Generar KML';
+    btnGenerar.disabled = false;
+  }
+}
+
+function descargarKMLGenerado() {
+  if (!window.kmlGenerado) {
+    alert('No hay KML generado para descargar');
+    return;
+  }
+  
+  const blob = new Blob([window.kmlGenerado], { type: 'application/vnd.google-earth.kml+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `busqueda_multiple_${selectedTable}_${new Date().getTime()}.kml`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+async function capturarCoordendasGPS() {
+  if (!navigator.geolocation) {
+    return; // Sin geolocalización disponible, continúa silenciosamente
+  }
+  
+  try {
+    const posicion = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve, 
+        reject, 
+        {
+          enableHighAccuracy: false, // Menos preciso pero más rápido
+          timeout: 3000, // Timeout corto para no demorar
+          maximumAge: 300000 // Acepta ubicación de hasta 5 minutos
+        }
+      );
+    });
+    
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const coordenadas = `${lat},${lng}`;
+    const timestamp = new Date().toISOString();
+    
+    // Guardar en base de datos silenciosamente
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ 
+          coordenadas: coordenadas,
+          ultimaconexion: timestamp
+        })
+        .eq('id', currentUser.id);
+    }
+    
+  } catch (error) {
+    // Falló la captura GPS, continúa silenciosamente sin alertas
+    if (currentUser) {
+      await supabaseClient
+        .from('usuarios')
+        .update({ ultimaconexion: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+  }
+}
+
+async function busquedaAdicionalProgresiva(campo, valor) {
+  // Mostrar indicador de búsqueda adicional
+  mostrarIndicadorBusquedaAdicional();
+  
+  const tablasAdicionales = ['OS Pendientes', 'OSCerradas'];
+  const resultadosAdicionales = {};
+  
+  try {
+    // Buscar en cada tabla
+    for (const tabla of tablasAdicionales) {
+      const config = tableConfigs[tabla];
+      if (!config) continue;
+      
+      const campoEquivalente = encontrarCampoEquivalente(campo, config);
+      if (!campoEquivalente) continue;
+      
+      let query = supabaseClient.from(tabla).select('*');
+      query = query.eq(campoEquivalente, valor);
+      
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        resultadosAdicionales[tabla] = data;
+      }
+    }
+    
+    // Actualizar interfaz con resultados
+    actualizarConResultadosAdicionales(resultadosAdicionales);
+    
+  } catch (error) {
+    console.error('Error en búsqueda adicional:', error);
+    ocultarIndicadorBusquedaAdicional();
+  }
+}
+
+
+function mostrarIndicadorBusquedaAdicional() {
+  const container = document.getElementById('searchResults');
+  const indicador = `
+    <div id="indicadorBusquedaAdicional" class="result-card" style="background: #f0f9ff; border: 2px solid #3b54d3; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <div class="loading" style="display: block;"></div>
+        <span>Buscando en otras tablas...</span>
+      </div>
+      <div style="margin-top: 10px; font-size: 14px; color: #666;">
+        <div>⏳ OS Pendientes...</div>
+        <div>⏳ OS Cerradas...</div>
+      </div>
+    </div>
+  `;
+  container.innerHTML += indicador;
+}
+
+function ocultarIndicadorBusquedaAdicional() {
+  const indicador = document.getElementById('indicadorBusquedaAdicional');
+  if (indicador) indicador.remove();
+}
+
+function actualizarConResultadosAdicionales(resultadosAdicionales) {
+  ocultarIndicadorBusquedaAdicional();
+  
+  if (Object.keys(resultadosAdicionales).length > 0) {
+    const container = document.getElementById('searchResults');
+    let botonesHtml = `
+      <div class="result-card" style="background: #f0fff4; border: 2px solid #22c55e;">
+        <div class="result-header">✅ Información adicional encontrada</div>
+        <p>Se encontró información relacionada:</p>
+        <div class="action-buttons">
+    `;
+    
+    for (const [tabla, datos] of Object.entries(resultadosAdicionales)) {
+      const config = tableConfigs[tabla];
+      const icono = config ? config.icon : '📋';
+      botonesHtml += `
+        <button class="btn btn-secondary" onclick="mostrarResultadosAdicionales('${tabla}')">
+          ${icono} Ver ${config.title} (${datos.length})
+        </button>
+      `;
+    }
+    
+    botonesHtml += `</div></div>`;
+    container.innerHTML += botonesHtml;
+    
+    window.resultadosAdicionales = resultadosAdicionales;
+  }
+}
+
+function encontrarCampoEquivalente(campoOriginal, configTabla) {
+  const mapaCampos = {
+    'CuentaContrato': ['CuentaContrato'],
+    'Medidor': ['Medidor'],
+    'NombreCliente': ['NombreCliente']
+  };
+  
+  const posiblesCampos = mapaCampos[campoOriginal] || [campoOriginal];
+  
+  for (const field of configTabla.fields) {
+    if (posiblesCampos.includes(field.key)) {
+      return field.key;
+    }
+  }
+  return null;
+}
+
+function mostrarResultadosAdicionales(tabla) {
+  if (!window.resultadosAdicionales || !window.resultadosAdicionales[tabla]) {
+    alert('No hay datos disponibles');
+    return;
+  }
+  
+  const datos = window.resultadosAdicionales[tabla];
+  const config = tableConfigs[tabla];
+  
+  // *** NO CAMBIAR selectedTable PERMANENTEMENTE ***
+  const container = document.getElementById('searchResults');
+  
+  // Guardar el contenido actual antes de reemplazarlo
+  const contenidoOriginal = container.innerHTML;
+  
+  let html = `
+    <div class="result-card" style="background: #e3f2fd; border: 2px solid #2196f3;">
+      <div class="result-header">📋 ${config.title} - Información Adicional</div>
+      <div style="margin-bottom: 15px; text-align: center;">
+        <button class="btn btn-back" onclick="restaurarResultadosOriginales()">
+          ← Volver a Consulta de Suministros
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Cambio temporal de selectedTable solo para generar los resultados
+  const selectedTableOriginal = selectedTable;
+  selectedTable = tabla;
+  
+  datos.forEach((item, index) => {
+    html += `<div class="result-card"><div class="result-header">Resultado ${index + 1}</div>`;
+    config.resultFields.forEach(field => {
+      let valor = item[field] || 'N/A';
+      
+      // Aplicar el mismo formato especial para comentarios
+      if ((field === 'Comentario' || field === 'ComentarioGeneral') && valor !== 'N/A') {
+        valor = valor
+          .replace(/\*([^*]+)\*/g, '<br><strong>$1</strong>')
+          .replace(/OS SAP/g, '<br><strong>OS SAP</strong>')
+          .replace(/Fecha Generacion/g, '<br><strong>Fecha Generación:</strong>')
+          .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
+        
+        html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
+      } else {
+        html += `<div class="result-item"><strong>${field}:</strong> ${valor}</div>`;
+      }
+    });
+    
+    html += '<div class="action-buttons">';
+    config.actions.forEach(action => {
+      const val = item[action];
+      if (!val) return;
+      
+      if (action.toLowerCase().includes('coordenadas')) {
+        html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
+      } else if (action === 'FotoLink' || action === 'fotolink') {
+        html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+      }
+    });
+    html += '</div></div>';
+  });
+  
+  // Restaurar selectedTable original
+  selectedTable = selectedTableOriginal;
+  
+  // Guardar el contenido original para poder restaurarlo
+  window.contenidoOriginalBusqueda = contenidoOriginal;
+  
+  container.innerHTML = html;
+}
+      function restaurarResultadosOriginales() {
+  const container = document.getElementById('searchResults');
+  if (window.contenidoOriginalBusqueda) {
+    container.innerHTML = window.contenidoOriginalBusqueda;
+    // Limpiar la variable temporal
+    delete window.contenidoOriginalBusqueda;
+  } else {
+    container.innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
+  }
+}
+      function volverAResultadosPrincipales(tablaAnterior) {
+  // Redirigir a la nueva función que conserva los resultados
+  restaurarResultadosOriginales();
+}
+
+
+    function abrirCoordenadas(coordenadas) {
+      if (coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
+    }
+
+    function verFoto(link) {
+      if (link) window.open(link, '_blank');
+    }
+
+function seleccionarTabla(tableName) {
+  // Verificar si el usuario tiene rol Lectura y solo permitir consultas_servicios
+  if (currentUser.rol === 'Lectura' && tableName !== 'consultas_servicios') {
+    alert('Su rol solo permite acceso a Consultas de Servicios');
+    return;
+  }
+
+  selectedTable = tableName;
+  const config = tableConfigs[tableName];
+  document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
+  generarCamposBusqueda(config);
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'block';
+}
+
+  </script>
+
+<script>
+
+// Cache datos importantes en localStorage (solo para datos de sesión)
+function guardarDatosOffline() {
+    if (currentUser) {
+        sessionStorage.setItem('cleca_user_session', JSON.stringify({
+            user: currentUser,
+            timestamp: Date.now()
+        }));
+    }
+}
+
+// Verificar datos offline al cargar
+function verificarDatosOffline() {
+    const sessionData = sessionStorage.getItem('cleca_user_session');
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        const tiempoTranscurrido = (Date.now() - data.timestamp) / 1000 / 60; // minutos
+        
+        if (tiempoTranscurrido < 45) { // 45 minutos
+            currentUser = data.user;
+            document.getElementById('currentUser').textContent = `Bienvenido, ${data.user.usuario}`;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('tableSelectionSection').style.display = 'block';
+            return true;
+        }
+    }
+    return false;
+}
+
+// Inicializar al cargar la página
+window.addEventListener('load', function() {
+    // Registro del Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    }
+    
+    // Verificar sesión offline
+if (!verificarDatosOffline()) {
+    document.getElementById('loginSection').style.display = 'block';
+}
+});
+</script>
+</body>
+</html>
+
+
 
 
 
