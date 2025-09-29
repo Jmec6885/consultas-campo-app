@@ -1259,37 +1259,66 @@ mostrarTablasSegunRol();
   }
 }
 
-      // === FUNCIÓN PARA MOSTRAR LA SELECCIÓN DE TURNO ===
+     // === FUNCIÓN PARA MOSTRAR LA SELECCIÓN DE TURNO (CORREGIDA) ===
 function mostrarSeleccionTurno() {
     const ahora = new Date();
     const horaActual = ahora.getHours();
     const turnosDisponibles = [];
     const diaActual = ahora.toDateString();
     
-    // Obtener la sesión anterior (si existía) para evitar que salten de turno
     const lastSession = JSON.parse(sessionStorage.getItem('attf_last_turn'));
     
     Object.entries(TURNOS_ATTF).forEach(([key, turno]) => {
         let esTurnoActivo = false;
-
-        // Determinar si el turno está ACTIVO AHORA (usando horas de gracia)
+        
+        // Regla 1: Determinar si el turno está ACTIVO AHORA (usando horas de gracia)
         if (turno.horaFinGracia < turno.horaInicioGracia) {
-            // Turno nocturno (ej: 8 PM a 8 AM)
-            esTurnoActivo = horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia;
+            // **Turno nocturno (ej: 8 PM a 8 AM)**
+            // Para la NOCHE, la hora de gracia se extiende al día siguiente
+            const horaFinGracia = turno.horaFinGracia; // 8 AM
+            const horaInicioGracia = turno.horaInicioGracia; // 8 PM (20)
+            
+            // Lógica: Está activo si (es de noche) O (es de mañana ANTES de que termine el turno de gracia)
+            esTurnoActivo = horaActual >= horaInicioGracia || horaActual < horaFinGracia;
+            
         } else {
-            // Turno diurno (ej: 4 AM a 4 PM)
+            // **Turno diurno (ej: 4 AM a 4 PM)**
             esTurnoActivo = horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia;
         }
+
+        // Regla 2: Aplicar la regla de bloqueo de salto de turno
+        let puedeSeleccionar = false;
         
-        // Regla de bloqueo de salto de turno
         if (lastSession && lastSession.dia === diaActual) {
-            // Si ya inició sesión hoy, solo puede volver a elegir su turno anterior
+            // Si ya inició sesión hoy, solo puede reingresar a su turno anterior si sigue activo
             if (lastSession.turnoKey === key && esTurnoActivo) {
-                turnosDisponibles.push({ key, ...turno, descripcion: "Reingreso al turno de hoy" });
+                puedeSeleccionar = true;
             }
         } else if (esTurnoActivo) {
-            // Si no ha iniciado sesión hoy, puede elegir cualquier turno activo
-            turnosDisponibles.push({ key, ...turno, descripcion: "Turno disponible" });
+            // Si es un NUEVO INGRESO y el turno está activo
+            
+            // **REGLA ADICIONAL CLAVE para NUEVOS INGRESOS en turnos nocturnos:**
+            // Si el turno cruza la medianoche (es nocturno), solo permitimos el nuevo ingreso
+            // hasta la horaInicioGracia + 2 horas, para evitar que entren al final.
+            if (turno.horaFinGracia < turno.horaInicioGracia) {
+                 // Ejemplo: 8 PM a 8 AM. Nuevo ingreso solo es permitido hasta 10 PM.
+                 if (horaActual >= turno.horaInicioGracia) { // Es de noche (8 PM a 11 PM)
+                    puedeSeleccionar = true; // Permitir el ingreso en la noche
+                 } 
+                 // NO PERMITIR nuevos ingresos en la mañana (ej: a las 7 AM),
+                 // solo reingresos si ya lo había elegido (manejado arriba en lastSession).
+            } else {
+                 // Es diurno, si está activo, se puede seleccionar
+                 puedeSeleccionar = true;
+            }
+        }
+        
+        if (puedeSeleccionar) {
+            // Solo agregar a disponibles si pasa todas las reglas
+            const descripcion = (lastSession && lastSession.dia === diaActual && lastSession.turnoKey === key) 
+                                ? "Reingreso al turno de hoy" 
+                                : "Turno disponible";
+            turnosDisponibles.push({ key, ...turno, descripcion: descripcion });
         }
     });
     
@@ -1299,12 +1328,11 @@ function mostrarSeleccionTurno() {
             mensaje += '\nSu turno ya ha terminado por hoy (acceso bloqueado hasta mañana).';
         }
         alert(mensaje);
-        logout(); // Cierra sesión si no hay turnos disponibles
+        logout(); 
         return;
     }
     
     const loginSection = document.getElementById('loginSection');
-    // ... (El resto de la función para mostrar el HTML sigue igual)
     // Asegúrate de que el HTML usa el array `turnosDisponibles`
     loginSection.innerHTML = `
         <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
@@ -1490,26 +1518,26 @@ async function renovarSesion() {
     .eq('id', currentUser.id);
 }
 
+// === FUNCIÓN DE CIERRE DE SESIÓN UNIVERSAL ===
 async function logout() {
-  sessionStorage.removeItem('cleca_user_session');
-  if (currentUser) {
-    await supabaseClient
-      .from('usuarios')
-      .update({ sessionactiva: false, sessiontoken: null })
-      .eq('id', currentUser.id);
-  }
+    // 1. Limpiar variables de sesión del navegador
+    sessionStorage.removeItem('cleca_user_session');
+    sessionStorage.removeItem('attf_last_turn'); // <-- Agregamos esta línea para el caso ATTF
 
-  currentUser = null;
-  selectedTable = null;
+    if (currentUser) {
+        // 2. Limpiar la sesión en la base de datos (Supabase)
+        await supabaseClient
+            .from('usuarios')
+            .update({ sessionactiva: false, sessiontoken: null })
+            .eq('id', currentUser.id);
+    }
 
-  document.getElementById('userInfo').classList.add('hidden');
-  document.getElementById('loginSection').style.display = 'block';
-  document.getElementById('tableSelectionSection').style.display = 'none';
-  document.getElementById('searchSection').style.display = 'none';
-
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
-  document.getElementById('searchResults').innerHTML = '';
+    // 3. Reiniciar las variables en memoria
+    currentUser = null;
+    selectedTable = null;
+    
+    // 4. Forzar una recarga para volver a la pantalla de login/password limpia
+    window.location.reload(); 
 }
 
     function generarCamposBusqueda(config) {
@@ -2486,5 +2514,3 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
-
-
