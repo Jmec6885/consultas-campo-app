@@ -2051,7 +2051,9 @@ async function buscarOSRelacionadas(osData) {
     datos.forEach((item, index) => {
         html += `<div class="result-card"><div class="result-header">Relacionada ${index + 1}</div>`;
         config.resultFields.forEach(field => {
-            let valor = item[field] || 'N/A';
+            
+            // 💡 CORRECCIÓN CLAVE: Aseguramos que 'valor' es un String, incluso si era null/undefined
+            let valor = String(item[field] || 'N/A'); 
             
             // =====================================================================
             // === LÓGICA DE FORMATO DE COMENTARIOS APLICADA AQUÍ ===
@@ -2126,13 +2128,14 @@ async function buscarOSRelacionadas(osData) {
             
         });
         
-        // ... El resto del código de la función (botones de acción) sigue igual ...
+        // Botones de acción
         html += '<div class="action-buttons">';
         config.actions.forEach(action => {
             const val = item[action];
             if (!val) return;
             
             if (action.toLowerCase().includes('coordenadas')) {
+                // Usando la función abrirCoordenadas con el formato mejorado
                 html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
             } else if (action === 'FotoLink' || action === 'fotolink') {
                 html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
@@ -2149,6 +2152,7 @@ async function buscarOSRelacionadas(osData) {
     
     container.innerHTML = html;
 }
+
 
 async function capturarCoordenadasGPS() {
   if (!navigator.geolocation || !currentUser) return;
