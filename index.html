@@ -1684,6 +1684,8 @@ async function buscar(campo, tipo) {
           .replace(/Estructura/g, '<br><em>Estructura</em>')
           .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
           .replace(/Municipio/g, '<br><em>Municipio</em>')
+          .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
+          .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
           .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
         
         html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
@@ -2116,6 +2118,8 @@ async function buscarOSRelacionadas(osData) {
                     .replace(/Estructura/g, '<br><em>Estructura</em>')
                     .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
                     .replace(/Municipio/g, '<br><em>Municipio</em>')
+                    .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
+                    .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
                     .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
                 
                 // Mostrar el campo con el div especial para formato
@@ -2614,6 +2618,8 @@ function mostrarResultadosAdicionales(tabla) {
                     .replace(/Estructura/g, '<br><em>Estructura</em>')
                     .replace(/Aes Circuito/g, '<br><em>Aes Circuito</em>')
                     .replace(/Municipio/g, '<br><em>Municipio</em>')
+                    .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
+                    .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
                     .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
                 
                 // Agregamos el div con estilo para aplicar el salto de línea y el formato
@@ -2749,3 +2755,4 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
+
