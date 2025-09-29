@@ -1362,8 +1362,8 @@ function programarCierreSesion(turno) {
     // Rol Consulta y cualquier otro: Acceso completo (todas las tablas)
     tableOptions.forEach(option => {
       option.style.display = 'block';
-    });
-  }
+        }); // ← Esta llave faltaba
+    }
 }
 
 function iniciarVerificacionSesion() {
@@ -2409,3 +2409,4 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
+
