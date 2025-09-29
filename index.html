@@ -1686,6 +1686,12 @@ async function buscar(campo, tipo) {
           .replace(/Municipio/g, '<br><em>Municipio</em>')
           .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
           .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
+          .replace(/OS ATOMO/g, '<br><em>OS ATOMO</em>')
+          .replace(/NIC(Contract Account)/g, '<br><em>NIC(Contract Account)</em>')
+          .replace(/Comentario de Previa/g, '<br><em>Comentario de Previa</em>')
+          .replace(/Comentario Generacion/g, '<br><em>Comentario Generacion</em>')
+          .replace(/Coordenadas/g, '<br><em>Coordenadas</em>')
+          .replace(/Coordenadas según ATOMO/g, '<br><em>Coordenadas según ATOMO</em>')
           .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
         
         html += `<div class="result-item"><strong>${field}:</strong><div style="margin-left: 10px; line-height: 1.6;">${valor}</div></div>`;
@@ -2120,6 +2126,12 @@ async function buscarOSRelacionadas(osData) {
                     .replace(/Municipio/g, '<br><em>Municipio</em>')
                     .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
                     .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
+                    .replace(/OS ATOMO/g, '<br><em>OS ATOMO</em>')
+                    .replace(/NIC(Contract Account)/g, '<br><em>NIC(Contract Account)</em>')
+                    .replace(/Comentario de Previa/g, '<br><em>Comentario de Previa</em>')
+                    .replace(/Comentario Generacion/g, '<br><em>Comentario Generacion</em>')
+                    .replace(/Coordenadas/g, '<br><em>Coordenadas</em>')
+                    .replace(/Coordenadas según ATOMO/g, '<br><em>Coordenadas según ATOMO</em>')
                     .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
                 
                 // Mostrar el campo con el div especial para formato
@@ -2620,6 +2632,12 @@ function mostrarResultadosAdicionales(tabla) {
                     .replace(/Municipio/g, '<br><em>Municipio</em>')
                     .replace(/Fecha Ejec/g, '<br><em>Fecha Ejeco</em>')
                     .replace(/Fecha Gene/g, '<br><em>Fecha Gene</em>')
+                    .replace(/OS ATOMO/g, '<br><em>OS ATOMO</em>')
+                    .replace(/NIC(Contract Account)/g, '<br><em>NIC(Contract Account)</em>')
+                    .replace(/Comentario de Previa/g, '<br><em>Comentario de Previa</em>')
+                    .replace(/Comentario Generacion/g, '<br><em>Comentario Generacion</em>')
+                    .replace(/Coordenadas/g, '<br><em>Coordenadas</em>')
+                    .replace(/Coordenadas según ATOMO/g, '<br><em>Coordenadas según ATOMO</em>')
                     .replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" style="color: #3b54d3; text-decoration: underline; font-weight: 600;">🔗 Ver enlace</a>');
                 
                 // Agregamos el div con estilo para aplicar el salto de línea y el formato
@@ -2755,4 +2773,5 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
+
 
