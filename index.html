@@ -2238,6 +2238,98 @@ async function generarKMLMultiple() {
   }
 }
 
+// === FUNCIÓN PARA CONSTRUIR EL CONTENIDO XML DEL KML ===
+function generarKMLString(ubicaciones) {
+    if (!Array.isArray(ubicaciones) || ubicaciones.length === 0) {
+        throw new Error("No se enviaron ubicaciones válidas para el KML.");
+    }
+    
+    let kml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n';
+    kml += '<name>Coordenadas de búsqueda</name>\n';
+
+    ubicaciones.forEach(({ etiqueta, coordenadas }) => {
+        const parts = coordenadas.split(',').map(s => s.trim());
+        let coordsForKML;
+        
+        // Aseguramos el formato: Longitud,Latitud,Altitud (o solo Longitud,Latitud)
+        if (parts.length >= 2) {
+            // Asumiendo que tus datos son Latitud, Longitud (que es el formato común)
+            coordsForKML = `${parts[1]},${parts[0]},0`; 
+        } else {
+            // Fallback (debería ser corregido si ocurre)
+            coordsForKML = `0,0`; 
+        }
+
+        kml += '<Placemark>\n';
+        kml += `<name>${etiqueta}</name>\n`;
+        kml += `<description>ID/Referencia: ${etiqueta}</description>\n`;
+        kml += '<Style>\n<IconStyle>\n<Icon>\n';
+        kml += '<href>http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png</href>\n';
+        kml += '</Icon>\n</IconStyle>\n</Style>\n';
+        kml += `<Point><coordinates>${coordsForKML}</coordinates></Point>\n`;
+        kml += '</Placemark>\n';
+    });
+
+    kml += '</Document>\n</kml>';
+    return kml;
+}
+
+
+// === FUNCIÓN PARA MANEJAR LA BÚSQUEDA MÚLTIPLE (KML) ===
+async function busquedaMultipleKML(campo, valores) {
+    // 1. Mostrar un indicador
+    document.getElementById('searchResults').innerHTML = '<div class="result-card">⏳ Buscando múltiples resultados para KML...</div>';
+
+    try {
+        const resultadosTotales = [];
+        
+        // 2. Iterar sobre cada valor de búsqueda
+        for (const valor of valores) {
+            let query = supabaseClient.from(selectedTable).select('*');
+            query = query.eq(campo, valor); 
+            
+            const { data, error } = await query;
+
+            if (error) {
+                console.error(`Error buscando ${valor}:`, error.message);
+                continue;
+            }
+
+            if (data && data.length > 0) {
+                // Solo guardamos los resultados exitosos
+                resultadosTotales.push(...data);
+            }
+        }
+        
+        // 3. Almacenar los resultados globales para la generación de KML
+        window.resultadosKML = resultadosTotales; 
+
+        // 4. Actualizar la interfaz con el botón de generar KML
+        if (resultadosTotales.length > 0) {
+             let html = `<div class="result-card" style="background: #f0f8ff; border: 2px solid #5a5f78;">
+                         <div class="result-header">✅ ${resultadosTotales.length} Resultados Encontrados</div>
+                         <p>Resultados listos para generar el archivo KML de coordenadas.</p>
+                         <div class="action-buttons">
+                             <button id="btnGenerarKML" class="btn btn-primary" onclick="generarKMLMultiple()">
+                                 🗺️ Generar KML
+                             </button>
+                             <button id="btnDescargarKML" class="btn btn-success hidden" onclick="descargarKMLGenerado()">
+                                 ⬇️ Descargar KML
+                             </button>
+                         </div>
+                         </div>`;
+            document.getElementById('searchResults').innerHTML = html;
+        } else {
+            document.getElementById('searchResults').innerHTML = '<div class="result-card">❌ No se encontraron resultados para los valores ingresados.</div>';
+        }
+
+    } catch (error) {
+        console.error('Error en busquedaMultipleKML:', error);
+        document.getElementById('searchResults').innerHTML = '<div class="result-card">❌ Error procesando la búsqueda múltiple.</div>';
+    }
+}
+
 function descargarKMLGenerado() {
   if (!window.kmlGenerado) {
     alert('No hay KML generado para descargar');
@@ -2522,5 +2614,3 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
-
-
