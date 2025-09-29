@@ -751,48 +751,51 @@ function verificarHorarioPermitido(rol) {
         return horaActual >= 5 && horaActual < 20;
     }
 }
-// === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS ===
+// === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS (REVISADA) ===
 async function incrementarContadorBusquedas() {
-  if (!currentUser) return;
-  
-  try {
-    // Obtener contador actual
-    const { data: usuario, error: errorGet } = await supabaseClient
-      .from('usuarios')
-      .select('contador')
-      .eq('id', currentUser.id)
-      .single();
+    // Si no hay usuario logueado, sale de la función inmediatamente
+    if (!currentUser) return;
     
-    if (errorGet) {
-      console.log('Error obteniendo contador:', errorGet);
-      return;
+    try {
+        // 1. Obtener contador actual
+        // Nos aseguramos de pedir la columna 'Contador'
+        const { data: usuario, error: errorGet } = await supabaseClient
+            .from('usuarios')
+            .select('Contador') // <-- USAR 'Contador' (con C mayúscula)
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (errorGet) {
+            console.error('Error obteniendo Contador:', errorGet.message);
+            return;
+        }
+        
+        // Usamos .Contador para acceder al valor
+        const contadorActual = usuario.Contador || 0; 
+        const nuevoContador = contadorActual + 1;
+        
+        // 2. Actualizar contador
+        const { error: errorUpdate } = await supabaseClient
+            .from('usuarios')
+            .update({ 
+                // Nos aseguramos de actualizar la columna 'Contador'
+                Contador: nuevoContador, // <-- USAR 'Contador' (con C mayúscula)
+                ultimaconexion: new Date().toISOString()
+            })
+            .eq('id', currentUser.id);
+        
+        if (errorUpdate) {
+            console.error('Error actualizando Contador:', errorUpdate.message);
+        } else {
+            console.log(`Búsqueda #${nuevoContador} registrada para ${currentUser.usuario}`);
+            // 3. Actualizar currentUser localmente
+            currentUser.Contador = nuevoContador; 
+        }
+        
+    } catch (error) {
+        console.error('Error general en contador de búsquedas:', error.message);
     }
-    
-    const contadorActual = usuario.contador || 0;
-    const nuevoContador = contadorActual + 1;
-    
-    // Actualizar contador
-    const { error: errorUpdate } = await supabaseClient
-      .from('usuarios')
-      .update({ 
-        contador: nuevoContador,
-        ultimaconexion: new Date().toISOString()
-      })
-      .eq('id', currentUser.id);
-    
-    if (errorUpdate) {
-      console.log('Error actualizando contador:', errorUpdate);
-    } else {
-      console.log(`Búsqueda #${nuevoContador} registrada para ${currentUser.usuario}`);
-      // Actualizar currentUser con el nuevo contador
-      currentUser.contador = nuevoContador;
-    }
-    
-  } catch (error) {
-    console.log('Error en contador de búsquedas:', error);
-  }
 }
-
     const tableConfigs = {
      'consultas_servicios': {
         title: 'Consultas de Servicios',
