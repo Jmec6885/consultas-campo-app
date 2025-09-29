@@ -1562,41 +1562,46 @@ async function logout() {
       selectedTable = null;
     }
 
-    async function buscar(campo, tipo) {
-  await renovarSesion();
-  await incrementarContadorBusquedas();      
-  await capturarCoordenadasGPS();
-  
-  const valor = document.getElementById(`search${campo}`).value.trim();
-  if (!valor) {
-    alert(`Por favor ingrese un valor para ${campo}`);
-    return;
-  }
-
-  const valores = valor.includes(',') ? valor.split(',').map(v => v.trim()).filter(v => v) : [valor];
-  
-  if (valores.length > 1) {
-    await busquedaMultipleKML(campo, valores);
-  } else {
-    // Búsqueda principal inmediata
-    let query = supabaseClient.from(selectedTable).select('*');
-    if (tipo === 'exact') query = query.eq(campo, valor);
-    else query = query.ilike(campo, `%${valor}%`);
-
-    const { data, error } = await query;
-    if (error) {
-      alert('Error al buscar: ' + error.message);
+    // === FUNCIÓN PRINCIPAL DE BÚSQUEDA (CORREGIDA) ===
+async function buscar(campo, tipo) {
+    // 1. Renovamos sesión y capturamos coordenadas, pero NO contamos la búsqueda aún
+    await renovarSesion();
+    await capturarCoordenadasGPS(); 
+    
+    const valor = document.getElementById(`search${campo}`).value.trim();
+    if (!valor) {
+      alert(`Por favor ingrese un valor para ${campo}`);
       return;
     }
+
+    const valores = valor.includes(',') ? valor.split(',').map(v => v.trim()).filter(v => v) : [valor];
     
-    // Mostrar resultados principales inmediatamente
-    mostrarResultados(data || []);
-    
-    // Si estamos en consultas_servicios, iniciar búsqueda adicional
-    if (selectedTable === 'consultas_servicios') {
-      busquedaAdicionalProgresiva(campo, valor);
+    if (valores.length > 1) {
+      // Búsqueda Múltiple KML (generalmente no se cuenta aquí)
+      await busquedaMultipleKML(campo, valores);
+    } else {
+      // Búsqueda principal inmediata
+      let query = supabaseClient.from(selectedTable).select('*');
+      if (tipo === 'exact') query = query.eq(campo, valor);
+      else query = query.ilike(campo, `%${valor}%`);
+
+      const { data, error } = await query;
+      if (error) {
+        alert('Error al buscar: ' + error.message);
+        return;
+      }
+      
+      // 💡 SOLUCIÓN: Si la búsqueda simple fue exitosa, INCREMENTAMOS EL CONTADOR AQUÍ.
+      await incrementarContadorBusquedas();
+      
+      // Mostrar resultados principales inmediatamente
+      mostrarResultados(data || []);
+      
+      // Si estamos en consultas_servicios, iniciar búsqueda adicional
+      if (selectedTable === 'consultas_servicios') {
+        busquedaAdicionalProgresiva(campo, valor);
+      }
     }
-  }
 }
     function mostrarResultados(resultados) {
   const container = document.getElementById('searchResults');
