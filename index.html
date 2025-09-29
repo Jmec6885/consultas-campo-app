@@ -497,8 +497,8 @@
         background: #f0f9ff;
         border-radius: 8px;
         border: 1px solid #3b54d3;
-
-   }
+    } /* ← Esta llave faltaba */
+} /* ← Est
 .btn-secondary {
     font-size: 14px !important;
     padding: 10px 15px !important;
@@ -682,8 +682,7 @@ window.addEventListener('load', function() {
     </div>
 
 
-
-  <script>
+<script>
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -691,6 +690,100 @@ window.addEventListener('load', function() {
     let currentUser = null;
     let selectedTable = null;
     let consultasData = []; // Array para almacenar los datos de consultas
+
+      const TURNOS_ATTF = {
+  turno1: {
+    nombre: "Turno 1 (6:00 AM - 2:00 PM)",
+    horaInicio: 4, // 4 AM (2 horas antes)
+    horaFin: 16,   // 4 PM (2 horas después)
+    codigo: "6am-2pm"
+  },
+  turno2: {
+    nombre: "Turno 2 (2:00 PM - 10:00 PM)",
+    horaInicio: 12, // 12 PM (2 horas antes)
+    horaFin: 24,    // 12 AM (2 horas después)
+    codigo: "2pm-10pm"
+  },
+  turno3: {
+    nombre: "Turno 3 (10:00 PM - 6:00 AM)",
+    horaInicio: 20, // 8 PM (2 horas antes)
+    horaFin: 8,     // 8 AM (2 horas después, siguiente día)
+    codigo: "10pm-6am"
+  },
+  turno4: {
+    nombre: "Turno 4 (8:00 AM - 4:00 PM)",
+    horaInicio: 6,  // 6 AM (2 horas antes)
+    horaFin: 18,    // 6 PM (2 horas después)
+    codigo: "8am-4pm"
+  }
+};
+
+// Función para verificar horarios permitidos por rol
+function verificarHorarioPermitido(rol) {
+  const ahora = new Date();
+  const horaActual = ahora.getHours();
+  
+  if (rol === 'Supervisor') {
+    // Supervisor: acceso 24/7
+    return true;
+  } else if (rol === 'ATTF') {
+    // Para ATTF, verificar si está en horario de algún turno
+    return Object.values(TURNOS_ATTF).some(turno => {
+      if (turno.horaFin < turno.horaInicio) {
+        // Turno nocturno (cruza medianoche)
+        return horaActual >= turno.horaInicio || horaActual < turno.horaFin;
+      } else {
+        // Turno diurno
+        return horaActual >= turno.horaInicio && horaActual < turno.horaFin;
+      }
+    });
+  } else {
+    // Otros roles (Lectura, Contratista, Consulta): 5 AM a 8 PM
+    return horaActual >= 5 && horaActual < 20;
+  }
+}
+
+// === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS ===
+async function incrementarContadorBusquedas() {
+  if (!currentUser) return;
+  
+  try {
+    // Obtener contador actual
+    const { data: usuario, error: errorGet } = await supabaseClient
+      .from('usuarios')
+      .select('contador')
+      .eq('id', currentUser.id)
+      .single();
+    
+    if (errorGet) {
+      console.log('Error obteniendo contador:', errorGet);
+      return;
+    }
+    
+    const contadorActual = usuario.contador || 0;
+    const nuevoContador = contadorActual + 1;
+    
+    // Actualizar contador
+    const { error: errorUpdate } = await supabaseClient
+      .from('usuarios')
+      .update({ 
+        contador: nuevoContador,
+        ultimaconexion: new Date().toISOString()
+      })
+      .eq('id', currentUser.id);
+    
+    if (errorUpdate) {
+      console.log('Error actualizando contador:', errorUpdate);
+    } else {
+      console.log(`Búsqueda #${nuevoContador} registrada para ${currentUser.usuario}`);
+      // Actualizar currentUser con el nuevo contador
+      currentUser.contador = nuevoContador;
+    }
+    
+  } catch (error) {
+    console.log('Error en contador de búsquedas:', error);
+  }
+}
 
     const tableConfigs = {
      'consultas_servicios': {
@@ -795,34 +888,7 @@ window.addEventListener('load', function() {
         return { meses, lecturas, consumos };
     }
 
-    // ✅ Función para mostrar gráficas por índice
-    // Función para parsear datos de gráficas (consumos) sin cambiar ya que parece adecuada
-function parsearDatosGrafica(graficaData) {
-    if (!graficaData || graficaData.trim() === '') {
-        return { meses: [], lecturas: [], consumos: [] };
-    }
-
-    const meses = [], lecturas = [], consumos = [];
-    const lineas = graficaData.split('\n').map(l => l.trim()).filter(l => l);
-
-    for (const linea of lineas) {
-        const match = linea.match(/^([A-Za-z]+)\.-?(\d+)(?:-(\d+))?/);
-        if (match) {
-            const [, mes, lectura, consumo] = match;
-            meses.push(mes);
-            lecturas.push(parseInt(lectura));
-            if (consumo !== undefined) {
-                consumos.push(parseInt(consumo));
-            } else if (lecturas.length > 1) {
-                const consumoCalculado = lecturas[lecturas.length - 1] - lecturas[lecturas.length - 2];
-                consumos.push(Math.max(0, consumoCalculado));
-            } else {
-                consumos.push(0);
-            }
-        }
-    }
-    return { meses, lecturas, consumos };
-}
+    
 
 // Función para mostrar gráficas por índice con uso correcto del dato grafica
 function verGraficasPorIndice(dataIndex) {
@@ -1083,6 +1149,7 @@ function generarKMLString(ubicaciones) {
     return kml;
 }
 
+
     async function login() {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
@@ -1136,10 +1203,35 @@ function generarKMLString(ubicaciones) {
 
     currentUser = { ...data, session_token: sessionToken };
 
-    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-    document.getElementById('userInfo').classList.remove('hidden');
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('tableSelectionSection').style.display = 'block';
+// Verificar horario permitido
+if (!verificarHorarioPermitido(data.rol)) {
+  const horaActual = new Date().getHours();
+  let mensaje = '';
+  if (data.rol === 'ATTF') {
+    mensaje = `Su rol ATTF no tiene acceso en este horario (${horaActual}:00). Los horarios permitidos son:\n- Turno 1: 4:00 AM - 4:00 PM\n- Turno 2: 12:00 PM - 12:00 AM\n- Turno 3: 8:00 PM - 8:00 AM\n- Turno 4: 6:00 AM - 6:00 PM`;
+  } else {
+    mensaje = `Su acceso está limitado a horario de 5:00 AM a 8:00 PM. Hora actual: ${horaActual}:00`;
+  }
+  alert(mensaje);
+  await logout();
+  return;
+}
+
+// Si es rol ATTF, mostrar selección de turno
+if (data.rol === 'ATTF') {
+  mostrarSeleccionTurno();
+  return;
+}
+
+// Para otros roles, continuar normal
+document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+document.getElementById('userInfo').classList.remove('hidden');
+document.getElementById('loginSection').style.display = 'none';
+document.getElementById('tableSelectionSection').style.display = 'block';
+
+iniciarVerificacionSesion();
+guardarDatosOffline();
+mostrarTablasSegunRol();
 
     iniciarVerificacionSesion();
 
@@ -1159,6 +1251,92 @@ function generarKMLString(ubicaciones) {
   }
 }
 
+      function mostrarSeleccionTurno() {
+  const horaActual = new Date().getHours();
+  const turnosDisponibles = [];
+  
+  // Determinar qué turnos están disponibles según la hora actual
+  Object.entries(TURNOS_ATTF).forEach(([key, turno]) => {
+    let disponible = false;
+    if (turno.horaFin < turno.horaInicio) {
+      // Turno nocturno
+      disponible = horaActual >= turno.horaInicio || horaActual < turno.horaFin;
+    } else {
+      // Turno diurno
+      disponible = horaActual >= turno.horaInicio && horaActual < turno.horaFin;
+    }
+    
+    if (disponible) {
+      turnosDisponibles.push({key, ...turno});
+    }
+  });
+  
+  if (turnosDisponibles.length === 0) {
+    alert('No hay turnos disponibles en este horario');
+    logout();
+    return;
+  }
+  
+  const loginSection = document.getElementById('loginSection');
+  loginSection.innerHTML = `
+    <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
+    <h1 class="titulo-degradado">CLESA</h1>
+    <p class="subtitulo">Seleccione su Turno de Trabajo</p>
+    
+    <div class="table-selector">
+      ${turnosDisponibles.map(turno => `
+        <div class="table-option" onclick="seleccionarTurno('${turno.key}')">
+          <span class="table-icon">🕐</span>
+          <div class="table-title">${turno.nombre}</div>
+          <div class="table-description">Disponible ahora</div>
+        </div>
+      `).join('')}
+    </div>
+    <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Cancelar</button>
+  `;
+}
+
+function seleccionarTurno(turnoKey) {
+  const turno = TURNOS_ATTF[turnoKey];
+  currentUser.turno = turnoKey;
+  currentUser.turnoNombre = turno.nombre;
+  
+  // Programar cierre automático de sesión al final del turno
+  programarCierreSesion(turno);
+  
+  document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
+  document.getElementById('userInfo').classList.remove('hidden');
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('tableSelectionSection').style.display = 'block';
+  
+  iniciarVerificacionSesion();
+  guardarDatosOffline();
+  mostrarTablasSegunRol();
+}
+
+function programarCierreSesion(turno) {
+  const ahora = new Date();
+  let horaFin = turno.horaFin;
+  let fechaCierre = new Date();
+  
+  if (turno.horaFin < turno.horaInicio) {
+    // Turno nocturno, el cierre es al día siguiente
+    if (ahora.getHours() >= turno.horaInicio) {
+      fechaCierre.setDate(fechaCierre.getDate() + 1);
+    }
+  }
+  
+  fechaCierre.setHours(horaFin, 0, 0, 0);
+  
+  const tiempoRestante = fechaCierre.getTime() - ahora.getTime();
+  
+  if (tiempoRestante > 0) {
+    setTimeout(() => {
+      alert('Su turno ha terminado. La sesión se cerrará automáticamente.');
+      logout();
+    }, tiempoRestante);
+  }
+}
       function mostrarTablasSegunRol() {
      if (!currentUser || !currentUser.rol) {
     console.log('❌ currentUser no está disponible');
@@ -1178,6 +1356,21 @@ function generarKMLString(ubicaciones) {
     });
   } else if (currentUser.rol === 'Contratista') {
     // Rol Contratista: Mantener funcionalidad actual (todas las tablas)
+    tableOptions.forEach(option => {
+      option.style.display = 'block';
+    });
+  } else if (currentUser.rol === 'ATTF') {
+    // Rol ATTF: Solo consultas_servicios y TX y Cortes
+    tableOptions.forEach(option => {
+      const onclick = option.getAttribute('onclick');
+      if (onclick.includes('consultas_servicios') || onclick.includes('TX y Cortes')) {
+        option.style.display = 'block';
+      } else {
+        option.style.display = 'none';
+      }
+    });
+  } else if (currentUser.rol === 'Supervisor') {
+    // Rol Supervisor: Acceso completo a todas las tablas
     tableOptions.forEach(option => {
       option.style.display = 'block';
     });
@@ -1276,6 +1469,7 @@ async function logout() {
 
     async function buscar(campo, tipo) {
   await renovarSesion();
+  await incrementarContadorBusquedas();      
   await capturarCoordenadasGPS();
   
   const valor = document.getElementById(`search${campo}`).value.trim();
@@ -1402,7 +1596,7 @@ if ((selectedTable === 'consultas_servicios' || selectedTable === 'OS Pendientes
   setTimeout(() => {
     buscarOSRelacionadas(item).then(relacionadas => {
       if (relacionadas) {
-        mostrarOSRelacionadas(relacionadas, 'OS');
+        mostrarOSRelacionadas(relacionadas, 'OS', item);
       }
     });
   }, 2000);
@@ -1459,22 +1653,44 @@ if ((selectedTable === 'consultas_servicios' || selectedTable === 'OS Pendientes
             html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
           }
         }
-      } else {
-        // Rol Consulta o cualquier otro - Acceso completo
-        if (selectedTable === 'consultas_servicios') {
-          if (action === 'Coordenadas') {
-            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
-          } else if (action === 'Coordenadasgis') {
-            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
-          } else if (action === 'FotoLink') {
-            html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
-          } else if (action === 'Grafica') {
-            html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
-          }
-        } else if (selectedTable === 'TX y Cortes') {
-          if (action === 'Coordenadas') {
-            html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
-          }
+      } else if (currentUser.rol === 'ATTF') {
+  // ATTF: consultas_servicios y TX y Cortes, sin gráficas
+  if (selectedTable === 'consultas_servicios') {
+    if (action === 'Coordenadas') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+    } else if (action === 'Coordenadasgis') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+    } else if (action === 'FotoLink') {
+      html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+    }
+  } else if (selectedTable === 'TX y Cortes') {
+    if (action === 'Coordenadas') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+    }
+  }
+} else if (currentUser.rol === 'Supervisor') {
+  // Supervisor: Acceso completo
+  if (selectedTable === 'consultas_servicios') {
+    if (action === 'Coordenadas') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas Lector</button>`;
+    } else if (action === 'Coordenadasgis') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">🗺️ Coordenadas GIS</button>`;
+    } else if (action === 'FotoLink') {
+      html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+    } else if (action === 'Grafica') {
+      html += `<button class="btn btn-secondary" onclick="verGraficasPorIndice(${index})">📊 Ver Consumos</button>`;
+    }
+  } else if (selectedTable === 'TX y Cortes') {
+    if (action === 'Coordenadas') {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Ver Ubicación</button>`;
+    }
+  } else {
+    if (action.toLowerCase().includes('coordenadas')) {
+      html += `<button class="btn btn-secondary" onclick="abrirCoordenadas('${val}')">📍 Coordenadas</button>`;
+    } else if (action === 'FotoLink' || action === 'fotolink') {
+      html += `<button class="btn btn-secondary" onclick="verFoto('${val}')">📸 Ver Foto</button>`;
+    }
+  }
         } else {
           // Otras tablas - acceso completo
           if (action.toLowerCase().includes('coordenadas')) {
@@ -1662,7 +1878,7 @@ async function buscarOSRelacionadas(osData) {
 }
 
 
-      function mostrarOSRelacionadas(relacionadasPorTabla, criterioOriginal) {
+      function mostrarOSRelacionadas(relacionadasPorTabla, criterioOriginal, datosOriginales) {
   if (!relacionadasPorTabla || Object.keys(relacionadasPorTabla).length === 0) {
     console.log('❌ No hay relacionadas para mostrar');
     return;
@@ -1670,21 +1886,32 @@ async function buscarOSRelacionadas(osData) {
   
   console.log('📊 Mostrando relacionadas:', relacionadasPorTabla);
   
-  // Almacenar en una variable global específica para OS relacionadas
   window.resultadosAdicionalesOS = relacionadasPorTabla;
-  
   const container = document.getElementById('searchResults');
+  
+  // Crear identificación del registro original
+  const osOriginal = datosOriginales.OSATMO || datosOriginales.OSSAP || datosOriginales.OSATOMO || 'N/A';
+  const clienteOriginal = datosOriginales.NombreCliente || 'N/A';
+  const cuentaOriginal = datosOriginales.CuentaContrato || 'N/A';
+  const medidorOriginal = datosOriginales.Medidor || 'N/A';
+
   let botonesHtml = `
     <div class="result-card" style="background: #fff3cd; border: 2px solid #ffc107; margin-top: 15px;">
       <div class="result-header">🔗 OS Relacionadas Encontradas</div>
-      <p>Se encontraron OS adicionales en otras tablas. Haz clic para ver detalles completos:</p>
+      <div style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #ffc107;">
+        <strong>Relacionadas para:</strong><br>
+        📋 OS: ${osOriginal}<br>
+        👤 Cliente: ${clienteOriginal}<br>
+        📄 Cuenta: ${cuentaOriginal}<br>
+        ⚡ Medidor: ${medidorOriginal}
+      </div>
+      <p>Se encontraron OS adicionales. Haz clic para ver detalles completos:</p>
       <div class="action-buttons">
   `;
   
   for (const [tabla, datos] of Object.entries(relacionadasPorTabla)) {
     const config = tableConfigs[tabla];
     const icono = config ? config.icon : '📋';
-    console.log(`👀 Tabla ${tabla}: ${datos.length} registros`);
     botonesHtml += `
       <button class="btn btn-secondary" onclick="mostrarResultadosAdicionalesOS('${tabla}')">
         ${icono} Ver OS en ${config.title} (${datos.length})
@@ -1761,54 +1988,30 @@ async function buscarOSRelacionadas(osData) {
 }
 
 async function capturarCoordenadasGPS() {
-  if (!navigator.geolocation) {
-    return;
-  }
-  
+  if (!navigator.geolocation || !currentUser) return;
   try {
     const posicion = await new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Timeout'));
-      }, 2000);
-      
+      const timeoutId = setTimeout(() => reject(new Error("Timeout")), 2000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        pos => {
           clearTimeout(timeoutId);
           resolve(pos);
         },
-        (error) => {
+        error => {
           clearTimeout(timeoutId);
           reject(error);
         },
-        {
-          enableHighAccuracy: false,
-          timeout: 1500,
-          maximumAge: 600000
-        }
+        { enableHighAccuracy: false, timeout: 1500, maximumAge: 600000 }
       );
     });
-    
     const lat = posicion.coords.latitude;
     const lng = posicion.coords.longitude;
-    const coordenadas = `${lat},${lng}`;
+    const coordenadas = lat + "," + lng;
     const timestamp = new Date().toISOString();
-    
-    if (currentUser) {
-      await supabaseClient
-        .from('usuarios')
-        .update({ 
-          coordenadas: coordenadas,
-          ultimaconexion: timestamp
-        })
-        .eq('id', currentUser.id);
-    }
-    
+    await supabaseClient.from("usuarios").update({ coordenadas, ultimaconexion: timestamp }).eq("id", currentUser.id);
   } catch (error) {
     if (currentUser) {
-      await supabaseClient
-        .from('usuarios')
-        .update({ ultimaconexion: new Date().toISOString() })
-        .eq('id', currentUser.id);
+      await supabaseClient.from("usuarios").update({ ultimaconexion: new Date().toISOString() }).eq("id", currentUser.id);
     }
   }
 }
@@ -1817,59 +2020,72 @@ async function capturarCoordenadasGPS() {
   const container = document.getElementById('searchResults');
   if (window.contenidoOriginalBusqueda) {
     container.innerHTML = window.contenidoOriginalBusqueda;
-    // Limpiar la variable temporal
     delete window.contenidoOriginalBusqueda;
   } else {
     container.innerHTML = '<div class="result-card">Realice una nueva búsqueda</div>';
   }
 }
-      async function busquedaMultipleKML(campo, valores) {
-  const resultadosEncontrados = [];
-  const noEncontrados = [];
-  
-  for (const valor of valores) {
-    let query = supabaseClient.from(selectedTable).select('*');
-    query = query.eq(campo, valor);
-    
-    const { data, error } = await query;
-    if (data && data.length > 0) {
-      resultadosEncontrados.push(...data);
-    } else {
-      noEncontrados.push(valor);
-    }
-  }
-  
-  // Guardar resultados para KML
-  window.resultadosKML = resultadosEncontrados;
-  
+
+function mostrarIndicadorBusquedaAdicional() {
   const container = document.getElementById('searchResults');
-  let html = `
-    <div class="result-card">
-      <div class="result-header">📍 Búsqueda Múltiple para KML</div>
-      <p><strong>Total buscados:</strong> ${valores.length}</p>
-      <p><strong>Encontrados:</strong> ${resultadosEncontrados.length}</p>
-      <p><strong>No encontrados:</strong> ${noEncontrados.length}</p>
-  `;
-  
-  if (noEncontrados.length > 0) {
-    html += `<p><strong>Valores no encontrados:</strong> ${noEncontrados.join(', ')}</p>`;
-  }
-  
-  html += `
-      <div class="action-buttons" style="margin-top: 20px;">
-        <button class="btn btn-secondary" onclick="generarKMLMultiple()" id="btnGenerarKML">
-          🗺️ Generar KML
-        </button>
-        <button class="btn btn-secondary hidden" onclick="descargarKMLGenerado()" id="btnDescargarKML">
-          📥 Descargar KML
-        </button>
+  const indicador = `
+    <div id="indicadorBusquedaAdicional" class="result-card" style="background: #f0f9ff; border: 2px solid #3b54d3; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <div class="loading" style="display: block;"></div>
+        <span>Buscando OS relacionadas...</span>
       </div>
     </div>
   `;
-  
-  container.innerHTML = html;
+  container.innerHTML += indicador;
 }
 
+function ocultarIndicadorBusquedaAdicional() {
+  const indicador = document.getElementById('indicadorBusquedaAdicional');
+  if (indicador) indicador.remove();
+}
+
+function encontrarCampoEquivalente(campoOriginal, configTabla) {
+  const mapaCampos = {
+    'CuentaContrato': ['CuentaContrato'],
+    'Medidor': ['Medidor'], 
+    'NombreCliente': ['NombreCliente'],
+    'OSATMO': ['OSATMO', 'OSATOMO'],
+    'OSSAP': ['OSSAP']
+  };
+  
+  const posiblesCampos = mapaCampos[campoOriginal] || [campoOriginal];
+  
+  for (const field of configTabla.fields) {
+    if (posiblesCampos.includes(field.key)) {
+      return field.key;
+    }
+  }
+  return null;
+}
+
+
+
+function abrirCoordenadas(coordenadas) {
+  if (coordenadas) window.open(`https://www.google.com/maps?q=${coordenadas}`, '_blank');
+}
+
+function verFoto(link) {
+  if (link) window.open(link, '_blank');
+}
+
+function seleccionarTabla(tableName) {
+  if (currentUser.rol === 'Lectura' && tableName !== 'consultas_servicios') {
+    alert('Su rol solo permite acceso a Consultas de Servicios');
+    return;
+  }
+
+  selectedTable = tableName;
+  const config = tableConfigs[tableName];
+  document.getElementById('searchTitle').innerHTML = `${config.icon} ${config.title}`;
+  generarCamposBusqueda(config);
+  document.getElementById('tableSelectionSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'block';
+}
 
 
 async function generarKMLMultiple() {
@@ -1940,50 +2156,6 @@ function descargarKMLGenerado() {
 }
 
 
-async function capturarCoordendasGPS() {
-  if (!navigator.geolocation) {
-    return; // Sin geolocalización disponible, continúa silenciosamente
-  }
-  
-  try {
-    const posicion = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        resolve, 
-        reject, 
-        {
-          enableHighAccuracy: false, // Menos preciso pero más rápido
-          timeout: 3000, // Timeout corto para no demorar
-          maximumAge: 300000 // Acepta ubicación de hasta 5 minutos
-        }
-      );
-    });
-    
-    const lat = posicion.coords.latitude;
-    const lng = posicion.coords.longitude;
-    const coordenadas = `${lat},${lng}`;
-    const timestamp = new Date().toISOString();
-    
-    // Guardar en base de datos silenciosamente
-    if (currentUser) {
-      await supabaseClient
-        .from('usuarios')
-        .update({ 
-          coordenadas: coordenadas,
-          ultimaconexion: timestamp
-        })
-        .eq('id', currentUser.id);
-    }
-    
-  } catch (error) {
-    // Falló la captura GPS, continúa silenciosamente sin alertas
-    if (currentUser) {
-      await supabaseClient
-        .from('usuarios')
-        .update({ ultimaconexion: new Date().toISOString() })
-        .eq('id', currentUser.id);
-    }
-  }
-}
 
 async function busquedaAdicionalProgresiva(campo, valor) {
   // Mostrar indicador de búsqueda adicional
@@ -2252,13 +2424,5 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
 
 
