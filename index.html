@@ -751,17 +751,16 @@ function verificarHorarioPermitido(rol) {
         return horaActual >= 5 && horaActual < 20;
     }
 }
-// === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS (REVISADA) ===
+
+// === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS (SOLUCIÓN A LA CONCATENACIÓN) ===
 async function incrementarContadorBusquedas() {
-    // Si no hay usuario logueado, sale de la función inmediatamente
     if (!currentUser) return;
     
     try {
         // 1. Obtener contador actual
-        // Nos aseguramos de pedir la columna 'Contador'
         const { data: usuario, error: errorGet } = await supabaseClient
             .from('usuarios')
-            .select('Contador') // <-- USAR 'Contador' (con C mayúscula)
+            .select('Contador')
             .eq('id', currentUser.id)
             .single();
         
@@ -770,16 +769,15 @@ async function incrementarContadorBusquedas() {
             return;
         }
         
-        // Usamos .Contador para acceder al valor
-        const contadorActual = usuario.Contador || 0; 
+        // 💡 CAMBIO CLAVE: Usamos parseInt() para garantizar que sea un número.
+        const contadorActual = parseInt(usuario.Contador) || 0; 
         const nuevoContador = contadorActual + 1;
         
         // 2. Actualizar contador
         const { error: errorUpdate } = await supabaseClient
             .from('usuarios')
             .update({ 
-                // Nos aseguramos de actualizar la columna 'Contador'
-                Contador: nuevoContador, // <-- USAR 'Contador' (con C mayúscula)
+                Contador: nuevoContador,
                 ultimaconexion: new Date().toISOString()
             })
             .eq('id', currentUser.id);
@@ -788,7 +786,6 @@ async function incrementarContadorBusquedas() {
             console.error('Error actualizando Contador:', errorUpdate.message);
         } else {
             console.log(`Búsqueda #${nuevoContador} registrada para ${currentUser.usuario}`);
-            // 3. Actualizar currentUser localmente
             currentUser.Contador = nuevoContador; 
         }
         
@@ -796,6 +793,7 @@ async function incrementarContadorBusquedas() {
         console.error('Error general en contador de búsquedas:', error.message);
     }
 }
+
     const tableConfigs = {
      'consultas_servicios': {
         title: 'Consultas de Servicios',
@@ -1565,9 +1563,8 @@ async function logout() {
       selectedTable = null;
     }
 
-    // === FUNCIÓN PRINCIPAL DE BÚSQUEDA (CORREGIDA) ===
+    // === FUNCIÓN PRINCIPAL DE BÚSQUEDA (FINAL Y UNIVERSAL) ===
 async function buscar(campo, tipo) {
-    // 1. Renovamos sesión y capturamos coordenadas, pero NO contamos la búsqueda aún
     await renovarSesion();
     await capturarCoordenadasGPS(); 
     
@@ -1577,13 +1574,17 @@ async function buscar(campo, tipo) {
       return;
     }
 
+    // 💡 CAMBIO CLAVE: Contamos la búsqueda AHORA, después de la validación del valor
+    // Esto asegura que cada búsqueda válida (simple o múltiple) sea contada.
+    await incrementarContadorBusquedas();
+    
     const valores = valor.includes(',') ? valor.split(',').map(v => v.trim()).filter(v => v) : [valor];
     
     if (valores.length > 1) {
-      // Búsqueda Múltiple KML (generalmente no se cuenta aquí)
+      // Búsqueda Múltiple KML
       await busquedaMultipleKML(campo, valores);
     } else {
-      // Búsqueda principal inmediata
+      // Búsqueda principal inmediata (búsqueda simple)
       let query = supabaseClient.from(selectedTable).select('*');
       if (tipo === 'exact') query = query.eq(campo, valor);
       else query = query.ilike(campo, `%${valor}%`);
@@ -1594,9 +1595,6 @@ async function buscar(campo, tipo) {
         return;
       }
       
-      // 💡 SOLUCIÓN: Si la búsqueda simple fue exitosa, INCREMENTAMOS EL CONTADOR AQUÍ.
-      await incrementarContadorBusquedas();
-      
       // Mostrar resultados principales inmediatamente
       mostrarResultados(data || []);
       
@@ -1606,6 +1604,8 @@ async function buscar(campo, tipo) {
       }
     }
 }
+
+
     function mostrarResultados(resultados) {
   const container = document.getElementById('searchResults');
   const config = tableConfigs[selectedTable];
@@ -2522,3 +2522,5 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
+
+
