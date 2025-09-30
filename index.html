@@ -689,6 +689,65 @@ const TURNOS_ATTF = {
 };
 
 
+// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
+// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
+function verificarHorarioPermitido(rol) {
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    
+    if (rol === 'Supervisor') {
+        return { permitido: true };
+    } 
+    
+    if (rol === 'Contratista') {
+        if (!esDiaLaboral()) {
+            return { permitido: false, mensaje: 'El rol Contratista solo tiene acceso de Lunes a Sábado.' };
+        }
+        if (horaActual >= 5 && horaActual < 20) {
+            return { permitido: true };
+        }
+        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
+    }
+    
+    if (rol === 'Lectura' || rol === 'Consulta') {
+        if (horaActual >= 5 && horaActual < 20) {
+            return { permitido: true };
+        }
+        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
+    }
+    
+    if (rol === 'ATTF') {
+        return verificarTurnoATTFActivo(horaActual);
+    }
+    
+    return { permitido: true };
+}
+
+// === FUNCIÓN AUXILIAR PARA VERIFICAR DÍA LABORAL ===
+function esDiaLaboral() {
+    const dia = new Date().getDay();
+    return dia >= 1 && dia <= 6;
+}
+
+// === FUNCIÓN AUXILIAR PARA VERIFICAR TURNO ATTF ACTIVO ===
+function verificarTurnoATTFActivo(horaActual) {
+    for (const turno of Object.values(TURNOS_ATTF)) {
+        if (turno.horaFinGracia < turno.horaInicioGracia) {
+            if (horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia) {
+                return { permitido: true };
+            }
+        } else {
+            if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia) {
+                return { permitido: true };
+            }
+        }
+    }
+    return { 
+        permitido: false, 
+        mensaje: 'No hay turnos ATTF disponibles en este horario. Los turnos son:\n- Turno 1: 4 AM - 10 AM\n- Turno 2: 11 AM - 5 PM\n- Turno 3: 8 PM - 1 AM\n- Turno 4: 5 AM - 10 AM' 
+    };
+}
+
 async function login() {
     // 1. Obtener y Validar credenciales
     const username = document.getElementById('username').value.trim();
@@ -782,59 +841,6 @@ async function login() {
     }
 }
 
-// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
-function verificarHorarioPermitido(rol) {
-    const ahora = new Date();
-    const horaActual = ahora.getHours();
-    
-    if (rol === 'Supervisor') {
-        // Supervisor: acceso 24/7
-        return true;
-    } else if (rol === 'ATTF') {
-        // Para ATTF, verificar si está en el horario de GRACIA de algún turno
-        return Object.values(TURNOS_ATTF).some(turno => {
-            if (turno.horaFinGracia < turno.horaInicioGracia) {
-                // Turno nocturno (cruza medianoche)
-                // Ejemplo: 8 PM (20) a 8 AM (8)
-                return horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia;
-            } else {
-                // Turno diurno (no cruza medianoche)
-                // Ejemplo: 4 AM (4) a 4 PM (16)
-                return horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia;
-            }
-        });
-    } else {
-        // Otros roles (Lectura, Contratista, Consulta): 5 AM a 8 PM
-        return horaActual >= 5 && horaActual < 20;
-    }
-}
-
-	// Función para verificar día de la semana (para Contratista)
-function esDiaLaboral() {
-    const dia = new Date().getDay();
-    return dia >= 1 && dia <= 6; // Lunes(1) a Sábado(6), excluye Domingo(0)
-}
-
-
-function verificarTurnoATTFActivo(horaActual) {
-    for (const turno of Object.values(TURNOS_ATTF)) {
-        if (turno.horaFinGracia < turno.horaInicioGracia) {
-            // Turno nocturno (cruza medianoche)
-            if (horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia) {
-                return { permitido: true };
-            }
-        } else {
-            // Turno diurno
-            if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia) {
-                return { permitido: true };
-            }
-        }
-    }
-    return { 
-        permitido: false, 
-        mensaje: 'No hay turnos ATTF disponibles en este horario. Los turnos son:\n- Turno 1: 4 AM - 5 PM\n- Turno 2: 12 PM - 1 AM\n- Turno 3: 8 PM - 9 AM\n- Turno 4: 6 AM - 7 PM' 
-    };
-}
 
 
 // === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS (SOLUCIÓN A LA CONCATENACIÓN) ===
@@ -2889,3 +2895,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
