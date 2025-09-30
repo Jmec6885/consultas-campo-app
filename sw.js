@@ -1,9 +1,17 @@
 const CACHE_NAME = 'consulta-campo-v1';
-// Solo incluimos el index.html y la raíz, y el sw.js (opcionalmente)
 const urlsToCache = [
+    // 1. Archivos base
     '/',
-    '/index.html'
-    // Elimina '/styles.css' y '/app.js' si no existen como archivos separados
+    '/index.html',
+    
+    // 2. Archivo de tu lógica principal
+    '/app.js', // <-- ¡Asegúrate de que esta ruta sea correcta!
+    
+    // 3. CDN de Supabase (Crítico para que la app se cargue)
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 
+    
+    // Opcional: Si tienes CSS separado
+    '/styles.css' 
 ];
 
 self.addEventListener('install', event => {
@@ -11,16 +19,17 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        // Usa .addAll para el precache. Si falla aquí, el SW no se activará.
+        // Al precachear, si una URL falla, el SW no se instala.
         return cache.addAll(urlsToCache); 
       })
       .catch(error => {
-        console.error('Service Worker: Fallo en cache.addAll:', error);
-        // Es mejor dejar que falle aquí para depurar, pero para evitar el bloqueo, 
-        // asegúrate que las URLs de urlsToCache son correctas.
+        // MUY IMPORTANTE: Loggea el error para ver qué URL falló.
+        console.error('Service Worker: Fallo en cache.addAll (URL no encontrada):', error);
       })
   );
 });
+
+// El resto del código (fetch y activate) puede quedar igual.
 
 self.addEventListener('fetch', event => {
   event.respondWith(
