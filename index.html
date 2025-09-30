@@ -676,8 +676,8 @@ const TURNOS_ATTF = {
         nombre: "Turno 2 (2:00 PM - 10:00 PM)",
         horaInicio: 14,
         horaFin: 22,
-        horaInicioGracia: 10, // El botón aparece a las 11 AM
-        horaFinGracia: 18,    // El botón desaparece después de las 5 PM (17:00)
+        horaInicioGracia: 11, // El botón aparece a las 11 AM
+        horaFinGracia: 17,    // El botón desaparece después de las 5 PM (17:00)
         codigo: "2pm-10pm"
     },
     // Turno 3: 10:00 PM - 6:00 AM (Botón visible: 7 PM a 1 AM)
@@ -685,8 +685,8 @@ const TURNOS_ATTF = {
         nombre: "Turno 3 (10:00 PM - 6:00 AM)",
         horaInicio: 22,
         horaFin: 6,
-        horaInicioGracia: 18, // El botón aparece a las 7 PM (19:00)
-        horaFinGracia: 28,    // El botón desaparece después de la 1 AM (25:00)
+        horaInicioGracia: 19, // El botón aparece a las 7 PM (19:00)
+        horaFinGracia: 25,    // El botón desaparece después de la 1 AM (25:00)
         codigo: "10pm-6am"
     }
 };
@@ -751,7 +751,36 @@ function verificarTurnoATTFActivo(horaActual) {
     };
 }
 
+// Función para limpiar turnos viejos automáticamente
+async function limpiarTurnosViejos() {
+    try {
+        const fechaHoy = new Date().toISOString().split('T')[0];
+        
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                turno_actual: null,
+                turno_fecha: null,
+                turno_hora_inicio: null
+            })
+            .lt('turno_fecha', fechaHoy); // Donde turno_fecha sea menor a hoy
+        
+        if (error) {
+            console.error('Error limpiando turnos viejos:', error);
+        } else {
+            console.log('🧹 Turnos antiguos limpiados');
+        }
+    } catch (error) {
+        console.error('Error en limpieza de turnos:', error);
+    }
+}
+
 async function login() {
+    console.log('🔐 Ejecutando login...');
+    
+    // Limpiar turnos viejos al hacer login
+    await limpiarTurnosViejos();
+
     // 1. Obtener y Validar credenciales
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -815,8 +844,30 @@ async function login() {
 
         currentUser = { ...data, session_token: sessionToken };
 
-        // 5. Redirigir según rol
-        if (data.rol === 'ATTF') {
+         if (data.rol === 'ATTF') {
+            const fechaHoy = new Date().toISOString().split('T')[0];
+            
+            // Si tiene turno asignado del día actual, ir directo al menú
+            if (data.turno_fecha === fechaHoy && data.turno_actual) {
+                console.log('✅ Usuario tiene turno del día:', data.turno_actual);
+                currentUser.turnoAsignado = data.turno_actual;
+                currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
+                currentUser.turno_fecha = data.turno_fecha;
+                
+                document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('tableSelectionSection').style.display = 'block';
+                
+                mostrarTablasSegunRol();
+                iniciarVerificacionSesion();
+                guardarDatosOffline();
+                setInterval(verificarCorteTurno, 5 * 60 * 1000);
+                return;
+            }
+            
+            // Si no tiene turno o es de otro día, mostrar selección
+            console.log('👷 Usuario ATTF - Mostrando selección de turno');
             mostrarSeleccionTurno();
             return;
         }
@@ -1361,7 +1412,7 @@ function guardarTurnoEnSesion(turnoKey) {
 }
 
 // === FUNCIÓN PARA SELECCIONAR EL TURNO (UNIFICADA Y CORREGIDA) ===
-function seleccionarTurno(turnoKey) {
+async function seleccionarTurno(turnoKey) {
     const turno = TURNOS_ATTF[turnoKey];
     const ahora = new Date();
     
@@ -1370,9 +1421,36 @@ function seleccionarTurno(turnoKey) {
         return; 
     }
     
+    try {
+        // Guardar turno en la base de datos
+        const fechaActual = ahora.toISOString().split('T')[0]; // Formato: YYYY-MM-DD
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                turno_actual: turnoKey,
+                turno_fecha: fechaActual,
+                turno_hora_inicio: ahora.toISOString()
+            })
+            .eq('id', currentUser.id);
+        
+        if (error) {
+            console.error('Error guardando turno en BD:', error);
+            alert('Error al asignar el turno. Intente nuevamente.');
+            return;
+        }
+        
+        console.log('✅ Turno guardado en BD:', turnoKey);
+        
+    } catch (error) {
+        console.error('Error crítico guardando turno:', error);
+        alert('Error de conexión al asignar turno.');
+        return;
+    }
+    
+    // Asignar turno localmente
     currentUser.turnoAsignado = turnoKey;
     currentUser.turnoNombre = turno.nombre;
-    currentUser.diaIngreso = ahora.toDateString();
+    currentUser.turno_fecha = ahora.toISOString().split('T')[0];
     
     sessionStorage.setItem('attf_last_turn', JSON.stringify({
         turnoKey: turnoKey,
@@ -1509,27 +1587,28 @@ async function renovarSesion() {
     .eq('id', currentUser.id);
 }
 
-// === FUNCIÓN DE CIERRE DE SESIÓN UNIVERSAL ===
+
 async function logout() {
-    // 1. Limpiar variables de sesión del navegador
     sessionStorage.removeItem('cleca_user_session');
-    sessionStorage.removeItem('attf_last_turn'); // <-- Agregamos esta línea para el caso ATTF
+    sessionStorage.removeItem('attf_last_turn');
 
     if (currentUser) {
-        // 2. Limpiar la sesión en la base de datos (Supabase)
         await supabaseClient
             .from('usuarios')
-            .update({ sessionactiva: false, sessiontoken: null })
+            .update({ 
+                sessionactiva: false, 
+                sessiontoken: null
+                // NO limpiar turno_actual, turno_fecha, turno_hora_inicio
+            })
             .eq('id', currentUser.id);
     }
 
-    // 3. Reiniciar las variables en memoria
     currentUser = null;
     selectedTable = null;
-    
-    // 4. Forzar una recarga para volver a la pantalla de login/password limpia
-    window.location.reload(); 
+    window.location.reload();
 }
+
+
 
     function generarCamposBusqueda(config) {
       const searchGrid = document.getElementById('searchGrid');
@@ -2815,12 +2894,33 @@ async function login() {
 
         currentUser = { ...data, session_token: sessionToken };
 
-        // Si es rol ATTF, mostrar selección de turno
-        if (data.rol === 'ATTF') {
-            console.log('👷 Usuario ATTF - Mostrando selección de turno');
-            mostrarSeleccionTurno();
-            return;
-        }
+// Si es rol ATTF, verificar si ya tiene turno del día
+if (data.rol === 'ATTF') {
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    
+    // Si tiene turno asignado del día actual, ir directo al menú
+    if (data.turno_fecha === fechaHoy && data.turno_actual) {
+        console.log('✅ Usuario tiene turno del día:', data.turno_actual);
+        currentUser.turnoAsignado = data.turno_actual;
+        currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
+        
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+        
+        mostrarTablasSegunRol();
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        setInterval(verificarCorteTurno, 5 * 60 * 1000);
+        return;
+    }
+    
+    // Si no tiene turno o es de otro día, mostrar selección
+    console.log('👷 Mostrando selección de turno');
+    mostrarSeleccionTurno();
+    return;
+}
 
         // Para otros roles, continuar normal
         console.log('👤 Acceso concedido - Rol:', data.rol);
