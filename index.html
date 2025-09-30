@@ -639,7 +639,6 @@
     // --- 1. DEFINICIÓN DE VARIABLES GLOBALES (Usar solo 'let', una vez) ---
     let currentUser = null;
     let selectedTable = null;
-    let tableConfigs = {}; // CRÍTICO: Necesaria para verificarDatosOffline()
     let consultasData = []; 
 
     // --- 2. CONFIGURACIÓN E INICIALIZACIÓN DE SUPABASE ---
@@ -690,7 +689,98 @@ const TURNOS_ATTF = {
 };
 
 
-// ... (El resto del código JavaScript)
+async function login() {
+    // 1. Obtener y Validar credenciales
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!username || !password) {
+        alert('Por favor ingrese usuario y contraseña');
+        return;
+    }
+
+    try {
+        // 🚨 AQUÍ ESTÁ EL BLOQUE DE VERIFICACIÓN ÚNICA (COMENTADO PARA PRUEBAS MÓVILES)
+        /* const { data: existingSession, error: sessionError } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', username)
+            .eq('sessionactiva', true)
+            .maybeSingle();
+
+        if (existingSession) {
+            const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
+            if (!confirmar) return;
+
+            await supabaseClient
+                .from('usuarios')
+                .update({ sessionactiva: false, sessiontoken: null })
+                .eq('usuario', username);
+        }
+        */ // 🚨 FIN DEL BLOQUE COMENTADO
+
+        // 2. Autenticar usuario
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', username)
+            .eq('password', password)
+            .eq('activo', true)
+            .single();
+
+        if (error || !data) {
+            alert('Usuario o contraseña incorrectos');
+            return;
+        }
+
+        // 3. Verificar Horario (El Salvador, UTC-6)
+        const verificacion = verificarHorarioPermitido(data.rol);
+        if (!verificacion.permitido) {
+            alert(verificacion.mensaje);
+            return;
+        }
+
+        // 4. Crear sesión en DB y en memoria
+        const sessionToken = btoa(username + Date.now() + Math.random());
+        await supabaseClient
+            .from('usuarios')
+            .update({
+                sessionactiva: true,
+                sessiontoken: sessionToken,
+                ultimaconexion: new Date().toISOString()
+            })
+            .eq('id', data.id);
+
+        currentUser = { ...data, session_token: sessionToken };
+
+        // 5. Redirigir según rol
+        if (data.rol === 'ATTF') {
+            mostrarSeleccionTurno();
+            return;
+        }
+
+        // Para otros roles: continuar normal
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        mostrarTablasSegunRol();
+
+        // 6. Manejar visibilidad para renovar sesión
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && currentUser) {
+                renovarSesion();
+            }
+        });
+
+    } catch (err) {
+        console.error('Error de login:', err);
+        alert('Error de conexión. Por favor intente nuevamente.');
+    }
+}
 
 // === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
 function verificarHorarioPermitido(rol) {
@@ -1154,99 +1244,7 @@ function generarKMLString(ubicaciones) {
 }
 
 
-    async function login() {
-    // 1. Obtener y Validar credenciales
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if (!username || !password) {
-        alert('Por favor ingrese usuario y contraseña');
-        return;
-    }
-
-    try {
-        // 🚨 AQUÍ ESTÁ EL BLOQUE DE VERIFICACIÓN ÚNICA (COMENTADO PARA PRUEBAS MÓVILES)
-        /* const { data: existingSession, error: sessionError } = await supabaseClient
-            .from('usuarios')
-            .select('*')
-            .eq('usuario', username)
-            .eq('sessionactiva', true)
-            .maybeSingle();
-
-        if (existingSession) {
-            const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
-            if (!confirmar) return;
-
-            await supabaseClient
-                .from('usuarios')
-                .update({ sessionactiva: false, sessiontoken: null })
-                .eq('usuario', username);
-        }
-        */ // 🚨 FIN DEL BLOQUE COMENTADO
-
-        // 2. Autenticar usuario
-        const { data, error } = await supabaseClient
-            .from('usuarios')
-            .select('*')
-            .eq('usuario', username)
-            .eq('password', password)
-            .eq('activo', true)
-            .single();
-
-        if (error || !data) {
-            alert('Usuario o contraseña incorrectos');
-            return;
-        }
-
-        // 3. Verificar Horario (El Salvador, UTC-6)
-        const verificacion = verificarHorarioPermitido(data.rol);
-        if (!verificacion.permitido) {
-            alert(verificacion.mensaje);
-            return;
-        }
-
-        // 4. Crear sesión en DB y en memoria
-        const sessionToken = btoa(username + Date.now() + Math.random());
-        await supabaseClient
-            .from('usuarios')
-            .update({
-                sessionactiva: true,
-                sessiontoken: sessionToken,
-                ultimaconexion: new Date().toISOString()
-            })
-            .eq('id', data.id);
-
-        currentUser = { ...data, session_token: sessionToken };
-
-        // 5. Redirigir según rol
-        if (data.rol === 'ATTF') {
-            mostrarSeleccionTurno();
-            return;
-        }
-
-        // Para otros roles: continuar normal
-        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('tableSelectionSection').style.display = 'block';
-
-        iniciarVerificacionSesion();
-        guardarDatosOffline();
-        mostrarTablasSegunRol();
-
-        // 6. Manejar visibilidad para renovar sesión
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && currentUser) {
-                renovarSesion();
-            }
-        });
-
-    } catch (err) {
-        console.error('Error de login:', err);
-        alert('Error de conexión. Por favor intente nuevamente.');
-    }
-}
-
+    
 
      // === FUNCIÓN PARA MOSTRAR LA SELECCIÓN DE TURNO (CORREGIDA) ===
 function mostrarSeleccionTurno() {
@@ -2792,20 +2790,24 @@ function verificarDatosOffline() {
 
 
 window.addEventListener('load', function() {
-    
-    // 🛑 ELIMINAR EL BLOQUE COMPLETO DEL SERVICE WORKER DE AQUÍ
-    // if ('serviceWorker' in navigator) { ... }
+    // 🛑 SERVICE WORKER DESACTIVADO TEMPORALMENTE
+    /*
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('SW registrado');
+            })
+            .catch(function(registrationError) {
+                console.log('Error SW:', registrationError);
+            });
+    }
+    */
     
     // Intenta restaurar la sesión persistente
     if (!verificarDatosOffline()) {
-        // Si no hay sesión, muestra el formulario de login
         document.getElementById('loginSection').style.display = 'block';
     }
-
-    // Iniciar el chequeo de corte de turno (MOVIDO DENTRO DE verificarDatosOffline para persistencia)
-    // No es necesario repetirlo aquí si ya lo ejecutas en seleccionarTurno o verificarDatosOffline.
 });
-
 
 function seleccionarTabla(tableName) {
     // Verificar si el usuario tiene rol Lectura y solo permitir consultas_servicios
@@ -2826,10 +2828,7 @@ function seleccionarTabla(tableName) {
 
 
 
-</script>
+<script src="script.js"></script>
 </body>
 </html>
-
-
-
 
