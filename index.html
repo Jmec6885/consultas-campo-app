@@ -2760,31 +2760,29 @@ function verificarDatosOffline() {
     if (storedUser) {
         currentUser = JSON.parse(storedUser); 
         
-        // 🚨 LÓGICA CLAVE: Si ya hay un turno asignado, saltamos la selección de turnos.
+        // 🚨 LÓGICA CLAVE: Si ya hay un turno asignado (ATTF), saltamos la selección.
         if (currentUser.rol === 'ATTF' && currentUser.turnoAsignado) {
-            // Cargar menú principal y saltar selección de turnos
+            
+            // ... (Tu lógica de mostrar/filtrar secciones) ...
             document.getElementById('appContent').style.display = 'block';
             document.getElementById('loginSection').style.display = 'none';
-            
-            // 🛠️ CORRECCIÓN 1: Mostrar la sección de selección de tablas (el menú de módulos)
             document.getElementById('tableSelectionSection').style.display = 'block'; 
-            
-            // 🛠️ CORRECCIÓN 2: Llamar a la función que filtra los módulos según el rol ATTF
-            mostrarTablasSegunRol(); 
             
             // Opcional: Actualizar el encabezado con el turno persistente
             document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}`;
 
+            mostrarTablasSegunRol(); 
+            
+            // 🚨 CORRECCIÓN: Reiniciar el temporizador para el corte de turno 🚨
+            setInterval(verificarCorteTurno, 5 * 60 * 1000); 
+
             return true;
         }
 
-        // Si es otro rol o es ATTF pero aún no ha escogido turno (primer login)
+        // Si es otro rol o ATTF sin turno asignado...
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('loginSection').style.display = 'none';
-        
-        // 🛠️ NOTA: También debes mostrar el menú de tablas si es otro rol.
         document.getElementById('tableSelectionSection').style.display = 'block';
-        // Y llamar a mostrarTablasSegunRol() para filtrar las opciones.
         mostrarTablasSegunRol(); 
 
         return true; 
@@ -2793,32 +2791,20 @@ function verificarDatosOffline() {
 }
 
 
-// Inicializar al cargar la página
 window.addEventListener('load', function() {
-    // Registro del Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('SW registrado');
-            })
-            .catch(function(registrationError) {
-                console.log('Error SW:', registrationError);
-                // El error 404 de SW persistirá hasta que subas el archivo sw.js a la raíz
-            });
-    }
     
+    // 🛑 ELIMINAR EL BLOQUE COMPLETO DEL SERVICE WORKER DE AQUÍ
+    // if ('serviceWorker' in navigator) { ... }
+    
+    // Intenta restaurar la sesión persistente
     if (!verificarDatosOffline()) {
-    document.getElementById('loginSection').style.display = 'block'; 
-}
+        // Si no hay sesión, muestra el formulario de login
+        document.getElementById('loginSection').style.display = 'block';
+    }
 
-// 🚨 ACCIÓN PENDIENTE: Iniciar el chequeo de corte de turno
-if (currentUser && currentUser.rol === 'ATTF' && currentUser.turnoAsignado) {
-    // Esto lo ejecuta cada 5 minutos (5 * 60 * 1000 milisegundos)
-    setInterval(verificarCorteTurno, 5 * 60 * 1000); 
-}
+    // Iniciar el chequeo de corte de turno (MOVIDO DENTRO DE verificarDatosOffline para persistencia)
+    // No es necesario repetirlo aquí si ya lo ejecutas en seleccionarTurno o verificarDatosOffline.
 });
-
-
 
 
 function seleccionarTabla(tableName) {
@@ -2840,8 +2826,9 @@ function seleccionarTabla(tableName) {
 
 
 
-</script>
+<script src="script.js"></script>
 </body>
 </html>
+
 
 
