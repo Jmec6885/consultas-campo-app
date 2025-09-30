@@ -1295,10 +1295,10 @@ function mostrarSeleccionTurno() {
                 // En la madrugada (00:00 - 08:59), solo si ya lo eligió ayer
                 // Pero como estamos en "primer ingreso del día", NO permitimos en madrugada
             } else {
-                // Turnos diurnos
+                // Turnos diurnos (6-2, 8-4, 2-10)
                 // Permitir ingreso si está en la ventana de inicio (no después de horaFin)
-                if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFin) {
-                    puedeIngresar = true;
+                if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia) {
+        	    puedeIngresar = true;
                 }
             }
             
@@ -2763,13 +2763,28 @@ function verificarDatosOffline() {
             // Cargar menú principal y saltar selección de turnos
             document.getElementById('appContent').style.display = 'block';
             document.getElementById('loginSection').style.display = 'none';
-            // También debes cargar el menú o la tabla de consultas aquí.
+            
+            // 🛠️ CORRECCIÓN 1: Mostrar la sección de selección de tablas (el menú de módulos)
+            document.getElementById('tableSelectionSection').style.display = 'block'; 
+            
+            // 🛠️ CORRECCIÓN 2: Llamar a la función que filtra los módulos según el rol ATTF
+            mostrarTablasSegunRol(); 
+            
+            // Opcional: Actualizar el encabezado con el turno persistente
+            document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}`;
+
             return true;
         }
 
         // Si es otro rol o es ATTF pero aún no ha escogido turno (primer login)
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('loginSection').style.display = 'none';
+        
+        // 🛠️ NOTA: También debes mostrar el menú de tablas si es otro rol.
+        document.getElementById('tableSelectionSection').style.display = 'block';
+        // Y llamar a mostrarTablasSegunRol() para filtrar las opciones.
+        mostrarTablasSegunRol(); 
+
         return true; 
     }
     return false;
@@ -2826,3 +2841,4 @@ function seleccionarTabla(tableName) {
 </script>
 </body>
 </html>
+
