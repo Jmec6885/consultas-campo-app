@@ -2,7 +2,8 @@
 // 1. CONFIGURACIÓN Y VARIABLES GLOBALES
 // ==========================================================
 const supabaseUrl = 'https://bsxllefnehbwkuqbelec.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg;
+// 🚨 CORRECCIÓN DE SINTAXIS: Se agrega la comilla simple de cierre.
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzeGxsZWZuZWhid2t1cWJlbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQzMTksImV4cCI6MjA3MzA0MDMxOX0.Ma8elbehsraBPzPwSmntE78NaAfTgBKgDW_hMb-ohhg'; 
 
 // Inicialización del cliente Supabase
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
@@ -10,6 +11,10 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 // Variables de estado global
 let currentUser = null;
 let selectedTable = null;
+
+// 🚨 AQUÍ VA LA NUEVA LÍNEA: Referencia al botón de Login. 🚨
+//    Esto debe ir antes de las funciones que lo usan.
+const loginButton = document.getElementById('loginButton'); 
 
 // Definición de Turnos ATTF (Horarios en formato 24h)
 // horaFinGracia: La hora hasta la que se permite la selección/reingreso.
@@ -464,10 +469,29 @@ function mostrarTablasSegunRol() {
 // ==========================================================
 // 6. INICIALIZACIÓN DE LA APLICACIÓN
 // ==========================================================
+// ... (El resto de tus funciones y lógica) ...
+
+// ==========================================================
+// 6. INICIALIZACIÓN DE LA APLICACIÓN
+// ==========================================================
 window.addEventListener('load', function() {
-    // Intenta restaurar la sesión persistente
+    
+    // 1. Intenta restaurar la sesión persistente
     if (!verificarDatosOffline()) {
         // Si no hay sesión, muestra el formulario de login
         document.getElementById('loginSection').style.display = 'block';
+    }
+    
+    // 2. 🚨 ASIGNAR EL EVENTO DE CLIC DEL BOTÓN DE LOGIN 🚨
+    //    (Debe ir FUERA del if, para asegurar que siempre se asigne, 
+    //     si el botón existe en el DOM).
+    const loginButton = document.getElementById('loginButton'); // Asegúrate de que este ID existe en tu HTML
+    
+    if (loginButton) {
+        // Asigna la función 'login' al hacer clic, evitando el 'onclick' en el HTML.
+        loginButton.addEventListener('click', function(e) {
+            e.preventDefault(); // Detiene el envío normal del formulario (si aplica)
+            login();
+        });
     }
 });
