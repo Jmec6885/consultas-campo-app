@@ -528,7 +528,7 @@ function guardarDatosOffline() {
             id: currentUser.id,
             usuario: currentUser.usuario,
             rol: currentUser.rol,
-            session_token: currentUser.sessiontoken,
+            session_token: currentUser.session_token,
             turno: currentUser.turno || null, // Guardar el turno si existe
             turnoNombre: currentUser.turnoNombre || null
         };
@@ -1302,17 +1302,17 @@ async function login() {
     }
 
     // 4. Crear nueva sesión en BD
-    const sessionToken = btoa(username + Date.now() + Math.random());
+    const session_Token = btoa(username + Date.now() + Math.random());
     await supabaseClient
       .from('usuarios')
       .update({
         sessionactiva: true,
-        sessiontoken: sessionToken,
+        session_token: session_Token,
         ultimaconexion: new Date().toISOString()
       })
       .eq('id', data.id);
 
-    currentUser = { ...data, sessiontoken: sessionToken };
+    currentUser = { ...data, session_token: session_Token };
 
     // 5. Lógica específica para rol ATTF
     if (data.rol === "ATTF") {
@@ -1605,12 +1605,12 @@ function iniciarVerificacionSesion() {
     try {
       const { data, error } = await supabaseClient
         .from('usuarios')
-        .select('sessionactiva, sessiontoken, ultimaconexion')
+        .select('sessionactiva, session_token, ultimaconexion')
         .eq('id', currentUser.id)
         .single();
 
-      if (!data || !data.sessionactiva || data.sessiontoken !== currentUser.session_token) {
-        if (data && data.sessiontoken && data.sessiontoken !== currentUser.session_token) {
+      if (!data || !data.sessionactiva || data.session_token !== currentUser.session_token) {
+        if (data && data.session_token && data.session_token !== currentUser.session_token) {
           alert('Su sesión ha sido iniciada en otro dispositivo.');
           logout();
         }
@@ -1646,7 +1646,7 @@ async function logout() {
     if (currentUser) {
         await supabaseClient
             .from('usuarios')
-            .update({ sessionactiva: false, sessiontoken: null })
+            .update({ sessionactiva: false, session_token: null })
             .eq('id', currentUser.id);
     }
     currentUser = null;
