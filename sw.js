@@ -4,15 +4,16 @@ const urlsToCache = [
     '/',
     '/index.html',
     
-    // 2. Archivo de tu lógica principal
-    '/app.js', // <-- ¡Asegúrate de que esta ruta sea correcta!
+    // 2. 🚨 CORRECCIÓN CLAVE: Debe ser '/script.js'
+    '/script.js', 
     
-    // 3. CDN de Supabase (Crítico para que la app se cargue)
+    // 3. CDN de Supabase
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 
     
-    // Opcional: Si tienes CSS separado
-    '/styles.css' 
+    // 4. Tu lista no tiene 'styles.css', así que lo eliminamos para evitar fallos.
 ];
+
+// ... (el resto del código del Service Worker)
 
 self.addEventListener('install', event => {
   console.log('Service Worker: Evento Install - Abriendo cache...');
