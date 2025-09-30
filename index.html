@@ -1362,42 +1362,34 @@ function seleccionarTurno(turnoKey) {
     const turno = TURNOS_ATTF[turnoKey];
     const ahora = new Date();
     
-    // 1. Validar que no tenga turno asignado
     if (currentUser.turnoAsignado) {
         alert('Error: Ya tiene un turno asignado y activo. Debe cerrar sesión para finalizar el turno actual.');
         return; 
     }
-
-    // 2. Asignar turno
+    
     currentUser.turnoAsignado = turnoKey;
     currentUser.turnoNombre = turno.nombre;
     currentUser.diaIngreso = ahora.toDateString();
     
-    // 3. Guardar en sessionStorage
     sessionStorage.setItem('attf_last_turn', JSON.stringify({
         turnoKey: turnoKey,
         dia: ahora.toDateString(),
         horaInicio: ahora.toISOString()
     }));
     
-    // 4. Programar verificación de corte
     setInterval(verificarCorteTurno, 5 * 60 * 1000);
     
-    // 5. Actualizar interfaz
     document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('tableSelectionSection').style.display = 'block';
     
-    // 6. ⭐ CRÍTICO: Llamar a mostrarTablasSegunRol() AQUÍ
     console.log('🔧 Filtrando tablas según rol:', currentUser.rol);
     mostrarTablasSegunRol();
     
-    // 7. Otras funciones
     iniciarVerificacionSesion();
     guardarDatosOffline();
 }
-
 
 function programarCierreSesion(turno) {
     const ahora = new Date();
@@ -2702,29 +2694,6 @@ function verFoto(link) {
 }
 
 
-function seleccionarTurno(codigoTurno) {
-    // 1. Validar y Asignar Turno
-    if (currentUser.turnoAsignado) { // <--- 🚨 CORRECCIÓN: Usar la misma clave
-        alert('Error: Ya tiene un turno asignado y activo. Debe cerrar sesión para finalizar el turno actual.');
-        return; 
-    }
-    currentUser.turnoAsignado = codigoTurno;
-    localStorage.setItem('currentUser', JSON.stringify(currentUser)); 
-
-    // 2. Cargar Menú y UI
-    document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${TURNOS_ATTF[codigoTurno].nombre}`;
-    document.getElementById('userInfo').classList.remove('hidden'); // Si existe
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('tableSelectionSection').style.display = 'block';
-
-    // 3. Iniciar Verificación Periódica (¡CRÍTICO!)
-    // Debes llamar aquí a la verificación del corte, ya que acabas de asignar el turno.
-    setInterval(verificarCorteTurno, 5 * 60 * 1000); 
-    
-    // Si existen:
-    // iniciarVerificacionSesion(); 
-    // mostrarTablasSegunRol();
-}
 
 // === FUNCIÓN PARA VERIFICAR CORTE DE TURNO ===
 function verificarCorteTurno() {
