@@ -1316,7 +1316,7 @@ if (data.sessionactiva) {
       const lastSession = JSON.parse(sessionStorage.getItem('attflastturn'));
 
       if (lastSession && lastSession.dia === diaActual) {
-        const turnoAnterior = TURNOSATTF[lastSession.turnoKey];
+        const turnoAnterior = TURNOS_ATTF[lastSession.turnoKey];
         const horaActual = ahora.getHours();
 
         let turnoAunValido = false;
@@ -1394,7 +1394,7 @@ function mostrarSeleccionTurno() {
 
   // 1. Lógica para bloquear selección si ya existe turno válido hoy
   if (lastSession && lastSession.dia === diaActual) {
-    const turnoAnterior = TURNOSATTF[lastSession.turnoKey];
+    const turnoAnterior = TURNOS_ATTF[lastSession.turnoKey];
 
     let turnoAunValido = false;
     if (turnoAnterior.horaFinGracia < turnoAnterior.horaInicioGracia) {
@@ -1431,7 +1431,7 @@ function mostrarSeleccionTurno() {
   }
 
   // 2. Primer ingreso del día, mostrar turnos según ventana de gracia extendida (3h antes y 3h después)
-  Object.entries(TURNOSATTF).forEach(([key, turno]) => {
+  Object.entries(TURNOS_ATTF).forEach(([key, turno]) => {
     let puedeIngresar = false;
 
     // Definir ventanas de gracia extendida
