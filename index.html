@@ -1155,94 +1155,96 @@ function generarKMLString(ubicaciones) {
 
 
     async function login() {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
-  
-  if (!username || !password) {
-    alert('Por favor ingrese usuario y contraseña');
-    return;
-  }
+    // 1. Obtener y Validar credenciales
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
 
-  try {
-    // Verificar si ya existe una sesión activa
-    const { data: existingSession, error: sessionError } = await supabaseClient
-      .from('usuarios')
-      .select('*')
-      .eq('usuario', username)
-      .eq('sessionactiva', true)
-      .maybeSingle();
-
-    if (existingSession) {
-      const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
-      if (!confirmar) return;
-
-      await supabaseClient
-        .from('usuarios')
-        .update({ sessionactiva: false, sessiontoken: null })
-        .eq('usuario', username);
+    if (!username || !password) {
+        alert('Por favor ingrese usuario y contraseña');
+        return;
     }
 
-    // Autenticar usuario
-    const { data, error } = await supabaseClient
-      .from('usuarios')
-      .select('*')
-      .eq('usuario', username)
-      .eq('password', password)
-      .eq('activo', true)
-      .single();
+    try {
+        // 🚨 AQUÍ ESTÁ EL BLOQUE DE VERIFICACIÓN ÚNICA (COMENTADO PARA PRUEBAS MÓVILES)
+        /* const { data: existingSession, error: sessionError } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', username)
+            .eq('sessionactiva', true)
+            .maybeSingle();
 
-    if (error || !data) {
-      alert('Usuario o contraseña incorrectos');
-      return;
+        if (existingSession) {
+            const confirmar = confirm('Este usuario ya tiene una sesión activa en otro dispositivo. ¿Desea cerrar la sesión anterior y continuar?');
+            if (!confirmar) return;
+
+            await supabaseClient
+                .from('usuarios')
+                .update({ sessionactiva: false, sessiontoken: null })
+                .eq('usuario', username);
+        }
+        */ // 🚨 FIN DEL BLOQUE COMENTADO
+
+        // 2. Autenticar usuario
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', username)
+            .eq('password', password)
+            .eq('activo', true)
+            .single();
+
+        if (error || !data) {
+            alert('Usuario o contraseña incorrectos');
+            return;
+        }
+
+        // 3. Verificar Horario (El Salvador, UTC-6)
+        const verificacion = verificarHorarioPermitido(data.rol);
+        if (!verificacion.permitido) {
+            alert(verificacion.mensaje);
+            return;
+        }
+
+        // 4. Crear sesión en DB y en memoria
+        const sessionToken = btoa(username + Date.now() + Math.random());
+        await supabaseClient
+            .from('usuarios')
+            .update({
+                sessionactiva: true,
+                sessiontoken: sessionToken,
+                ultimaconexion: new Date().toISOString()
+            })
+            .eq('id', data.id);
+
+        currentUser = { ...data, session_token: sessionToken };
+
+        // 5. Redirigir según rol
+        if (data.rol === 'ATTF') {
+            mostrarSeleccionTurno();
+            return;
+        }
+
+        // Para otros roles: continuar normal
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        mostrarTablasSegunRol();
+
+        // 6. Manejar visibilidad para renovar sesión
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && currentUser) {
+                renovarSesion();
+            }
+        });
+
+    } catch (err) {
+        console.error('Error de login:', err);
+        alert('Error de conexión. Por favor intente nuevamente.');
     }
-
-    // Verificar horario permitido ANTES de crear la sesión
-    const verificacion = verificarHorarioPermitido(data.rol);
-    if (!verificacion.permitido) {
-      alert(verificacion.mensaje);
-      return;
-    }
-
-    // Crear sesión
-    const sessionToken = btoa(username + Date.now() + Math.random());
-    await supabaseClient
-      .from('usuarios')
-      .update({
-        sessionactiva: true,
-        sessiontoken: sessionToken,
-        ultimaconexion: new Date().toISOString()
-      })
-      .eq('id', data.id);
-
-    currentUser = { ...data, session_token: sessionToken };
-
-    // Si es rol ATTF, mostrar selección de turno
-    if (data.rol === 'ATTF') {
-      mostrarSeleccionTurno();
-      return;
-    }
-
-    // Para otros roles, continuar normal
-    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-    document.getElementById('userInfo').classList.remove('hidden');
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('tableSelectionSection').style.display = 'block';
-
-    iniciarVerificacionSesion();
-    guardarDatosOffline();
-    mostrarTablasSegunRol();
-
-    // Manejar visibilidad de la página para renovar sesión
-    document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && currentUser) {
-        renovarSesion();
-      }
-    });
-
-  } catch (err) {
-    console.error('Error de login:', err);
-    alert('Error de conexión. Por favor intente nuevamente.');
-  }
 }
 
 
