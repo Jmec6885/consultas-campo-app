@@ -693,63 +693,107 @@ window.addEventListener('load', function() {
 
       // === CONFIGURACIÓN DE TURNOS ATTF (2 horas ANTES y 2 horas DESPUÉS) ===
 const TURNOS_ATTF = {
-    // Turno 1: 6:00 AM - 2:00 PM (Acceso: 4 AM a 4 PM)
+    // Turno 1: 6:00 AM - 2:00 PM (Acceso: 4 AM a 5 PM - 2 antes, 3 después)
     turno1: {
         nombre: "Turno 1 (6:00 AM - 2:00 PM)",
+        horaInicio: 6,
+        horaFin: 14,
         horaInicioGracia: 4,  // 6 - 2 = 4 AM
-        horaFinGracia: 16,    // 2 + 2 = 4 PM
+        horaFinGracia: 17,    // 14 + 3 = 5 PM
         codigo: "6am-2pm"
     },
-    // Turno 4: 8:00 AM - 4:00 PM (Acceso: 6 AM a 6 PM)
+    // Turno 4: 8:00 AM - 4:00 PM (Acceso: 6 AM a 7 PM - 2 antes, 3 después)
     turno4: {
         nombre: "Turno 4 (8:00 AM - 4:00 PM)",
+        horaInicio: 8,
+        horaFin: 16,
         horaInicioGracia: 6,  // 8 - 2 = 6 AM
-        horaFinGracia: 18,    // 4 + 2 = 6 PM
+        horaFinGracia: 19,    // 16 + 3 = 7 PM
         codigo: "8am-4pm"
     },
-    // Turno 2: 2:00 PM - 10:00 PM (Acceso: 12 PM a 12 AM)
+    // Turno 2: 2:00 PM - 10:00 PM (Acceso: 12 PM a 1 AM - 2 antes, 3 después)
     turno2: {
         nombre: "Turno 2 (2:00 PM - 10:00 PM)",
-        horaInicioGracia: 12, // 2 PM - 2 = 12 PM
-        horaFinGracia: 24,    // 10 PM + 2 = 12 AM (medianoche, se usa 24 o 0)
+        horaInicio: 14,
+        horaFin: 22,
+        horaInicioGracia: 12, // 14 - 2 = 12 PM
+        horaFinGracia: 25,    // 22 + 3 = 1 AM (usamos 25 para cruzar medianoche)
         codigo: "2pm-10pm"
     },
-    // Turno 3: 10:00 PM - 6:00 AM (Acceso: 8 PM a 8 AM del día siguiente)
+    // Turno 3: 10:00 PM - 6:00 AM (Acceso: 8 PM a 9 AM - 2 antes, 3 después)
     turno3: {
         nombre: "Turno 3 (10:00 PM - 6:00 AM)",
-        horaInicioGracia: 20, // 10 PM - 2 = 8 PM
-        horaFinGracia: 8,     // 6 AM + 2 = 8 AM (del día siguiente)
+        horaInicio: 22,
+        horaFin: 6,
+        horaInicioGracia: 20, // 22 - 2 = 8 PM
+        horaFinGracia: 9,     // 6 + 3 = 9 AM (del día siguiente)
         codigo: "10pm-6am"
     }
 };
-
 // ... (El resto del código JavaScript)
 
-// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
+
+      // Función para verificar día de la semana (para Contratista)
+function esDiaLaboral() {
+    const dia = new Date().getDay();
+    return dia >= 1 && dia <= 6; // Lunes(1) a Sábado(6), excluye Domingo(0)
+}
+
+// Función mejorada para verificar horario permitido
 function verificarHorarioPermitido(rol) {
     const ahora = new Date();
     const horaActual = ahora.getHours();
     
     if (rol === 'Supervisor') {
-        // Supervisor: acceso 24/7
-        return true;
-    } else if (rol === 'ATTF') {
-        // Para ATTF, verificar si está en el horario de GRACIA de algún turno
-        return Object.values(TURNOS_ATTF).some(turno => {
-            if (turno.horaFinGracia < turno.horaInicioGracia) {
-                // Turno nocturno (cruza medianoche)
-                // Ejemplo: 8 PM (20) a 8 AM (8)
-                return horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia;
-            } else {
-                // Turno diurno (no cruza medianoche)
-                // Ejemplo: 4 AM (4) a 4 PM (16)
-                return horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia;
-            }
-        });
-    } else {
-        // Otros roles (Lectura, Contratista, Consulta): 5 AM a 8 PM
-        return horaActual >= 5 && horaActual < 20;
+        return true; // Acceso 24/7
+    } 
+    
+    if (rol === 'Contratista') {
+        // Solo lunes a sábado, 5 AM a 8 PM
+        if (!esDiaLaboral()) {
+            return { permitido: false, mensaje: 'El rol Contratista solo tiene acceso de Lunes a Sábado.' };
+        }
+        if (horaActual >= 5 && horaActual < 20) {
+            return { permitido: true };
+        }
+        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
     }
+    
+    if (rol === 'Lectura' || rol === 'Consulta') {
+        // 5 AM a 8 PM
+        if (horaActual >= 5 && horaActual < 20) {
+            return { permitido: true };
+        }
+        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
+    }
+    
+    if (rol === 'ATTF') {
+        // Para ATTF, verificamos si hay un turno activo válido
+        return verificarTurnoATTFActivo(horaActual);
+    }
+    
+    return { permitido: true }; // Otros roles
+}
+
+
+function verificarTurnoATTFActivo(horaActual) {
+    for (const turno of Object.values(TURNOS_ATTF)) {
+        if (turno.horaFinGracia < turno.horaInicioGracia) {
+            // Turno nocturno (cruza medianoche)
+            if (horaActual >= turno.horaInicioGracia || horaActual < turno.horaFinGracia) {
+                return { permitido: true };
+            }
+        } else {
+            // Turno diurno
+            if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia) {
+                return { permitido: true };
+            }
+        }
+    }
+    return { 
+        permitido: false, 
+        mensaje: 'No hay turnos ATTF disponibles en este horario. Los turnos son:\n- Turno 1: 4 AM - 5 PM\n- Turno 2: 12 PM - 1 AM\n- Turno 3: 8 PM - 9 AM\n- Turno 4: 6 AM - 7 PM' 
+    };
 }
 
 // === FUNCIÓN PARA INCREMENTAR CONTADOR DE BÚSQUEDAS (SOLUCIÓN A LA CONCATENACIÓN) ===
@@ -1162,13 +1206,14 @@ function generarKMLString(ubicaciones) {
     async function login() {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
-
+  
   if (!username || !password) {
     alert('Por favor ingrese usuario y contraseña');
     return;
   }
 
   try {
+    // Verificar si ya existe una sesión activa
     const { data: existingSession, error: sessionError } = await supabaseClient
       .from('usuarios')
       .select('*')
@@ -1186,6 +1231,7 @@ function generarKMLString(ubicaciones) {
         .eq('usuario', username);
     }
 
+    // Autenticar usuario
     const { data, error } = await supabaseClient
       .from('usuarios')
       .select('*')
@@ -1199,8 +1245,15 @@ function generarKMLString(ubicaciones) {
       return;
     }
 
-    const sessionToken = btoa(username + Date.now() + Math.random());
+    // Verificar horario permitido ANTES de crear la sesión
+    const verificacion = verificarHorarioPermitido(data.rol);
+    if (!verificacion.permitido) {
+      alert(verificacion.mensaje);
+      return;
+    }
 
+    // Crear sesión
+    const sessionToken = btoa(username + Date.now() + Math.random());
     await supabaseClient
       .from('usuarios')
       .update({
@@ -1212,42 +1265,23 @@ function generarKMLString(ubicaciones) {
 
     currentUser = { ...data, session_token: sessionToken };
 
-// Verificar horario permitido
-if (!verificarHorarioPermitido(data.rol)) {
-  const horaActual = new Date().getHours();
-  let mensaje = '';
-  if (data.rol === 'ATTF') {
-    mensaje = `Su rol ATTF no tiene acceso en este horario (${horaActual}:00). Los horarios permitidos son:\n- Turno 1: 4:00 AM - 4:00 PM\n- Turno 2: 12:00 PM - 12:00 AM\n- Turno 3: 8:00 PM - 8:00 AM\n- Turno 4: 6:00 AM - 6:00 PM`;
-  } else {
-    mensaje = `Su acceso está limitado a horario de 5:00 AM a 8:00 PM. Hora actual: ${horaActual}:00`;
-  }
-  alert(mensaje);
-  await logout();
-  return;
-}
+    // Si es rol ATTF, mostrar selección de turno
+    if (data.rol === 'ATTF') {
+      mostrarSeleccionTurno();
+      return;
+    }
 
-// Si es rol ATTF, mostrar selección de turno
-if (data.rol === 'ATTF') {
-  mostrarSeleccionTurno();
-  return;
-}
-
-// Para otros roles, continuar normal
-document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-document.getElementById('userInfo').classList.remove('hidden');
-document.getElementById('loginSection').style.display = 'none';
-document.getElementById('tableSelectionSection').style.display = 'block';
-
-iniciarVerificacionSesion();
-guardarDatosOffline();
-mostrarTablasSegunRol();
+    // Para otros roles, continuar normal
+    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('tableSelectionSection').style.display = 'block';
 
     iniciarVerificacionSesion();
-
-    // Guardar sesión para persistencia
+    guardarDatosOffline();
     mostrarTablasSegunRol();
 
-    // Manejar visibilidad de la página
+    // Manejar visibilidad de la página para renovar sesión
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden && currentUser) {
         renovarSesion();
@@ -1256,7 +1290,7 @@ mostrarTablasSegunRol();
 
   } catch (err) {
     console.error('Error de login:', err);
-    alert('Error de conexión');
+    alert('Error de conexión. Por favor intente nuevamente.');
   }
 }
 
@@ -1266,81 +1300,86 @@ function mostrarSeleccionTurno() {
     const horaActual = ahora.getHours();
     const turnosDisponibles = [];
     const diaActual = ahora.toDateString();
-    
+
     const lastSession = JSON.parse(sessionStorage.getItem('attf_last_turn'));
-    
-    Object.entries(TURNOS_ATTF).forEach(([key, turno]) => {
-        let esTurnoActivo = false;
-        
-        // Regla 1: Determinar si el turno está ACTIVO AHORA (usando horas de gracia)
-        if (turno.horaFinGracia < turno.horaInicioGracia) {
-            // **Turno nocturno (ej: 8 PM a 8 AM)**
-            // Para la NOCHE, la hora de gracia se extiende al día siguiente
-            const horaFinGracia = turno.horaFinGracia; // 8 AM
-            const horaInicioGracia = turno.horaInicioGracia; // 8 PM (20)
-            
-            // Lógica: Está activo si (es de noche) O (es de mañana ANTES de que termine el turno de gracia)
-            esTurnoActivo = horaActual >= horaInicioGracia || horaActual < horaFinGracia;
-            
+
+    // SI YA ELIGIÓ UN TURNO HOY, solo permitir reingreso al mismo turno
+    if (lastSession && lastSession.dia === diaActual) {
+        const turnoAnterior = TURNOS_ATTF[lastSession.turnoKey];
+
+        // Verificar si el turno anterior aún está en su ventana de gracia
+        let turnoAunValido = false;
+        if (turnoAnterior.horaFinGracia < turnoAnterior.horaInicioGracia) {
+            // Turno nocturno
+            turnoAunValido = horaActual >= turnoAnterior.horaInicioGracia || horaActual < turnoAnterior.horaFinGracia;
         } else {
-            // **Turno diurno (ej: 4 AM a 4 PM)**
-            esTurnoActivo = horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia;
+            turnoAunValido = horaActual >= turnoAnterior.horaInicioGracia && horaActual < turnoAnterior.horaFinGracia;
         }
 
-        // Regla 2: Aplicar la regla de bloqueo de salto de turno
-        let puedeSeleccionar = false;
-        
-        if (lastSession && lastSession.dia === diaActual) {
-            // Si ya inició sesión hoy, solo puede reingresar a su turno anterior si sigue activo
-            if (lastSession.turnoKey === key && esTurnoActivo) {
-                puedeSeleccionar = true;
-            }
-        } else if (esTurnoActivo) {
-            // Si es un NUEVO INGRESO y el turno está activo
+        if (turnoAunValido) {
+            // Permitir SOLO reingreso al turno que ya eligió
+            turnosDisponibles.push({ 
+                key: lastSession.turnoKey, 
+                ...turnoAnterior, 
+                descripcion: "Continuar en tu turno de hoy" 
+            });
+        } else {
+            // El turno ya expiró, bloquear hasta mañana
+            alert('Tu turno de hoy ha finalizado. Podrás acceder nuevamente mañana.');
+            logout();
+            return;
+        }
+    // === Bloque 'else' dentro de mostrarSeleccionTurno() para el PRIMER INGRESO ===
+    } else {
+        // PRIMER INGRESO DEL DÍA: Mostrar turnos según hora actual
+        Object.entries(TURNOS_ATTF).forEach(([key, turno]) => {
+            let puedeIngresar = false;
             
-            // **REGLA ADICIONAL CLAVE para NUEVOS INGRESOS en turnos nocturnos:**
-            // Si el turno cruza la medianoche (es nocturno), solo permitimos el nuevo ingreso
-            // hasta la horaInicioGracia + 2 horas, para evitar que entren al final.
+            // Lógica para el turno nocturno (10 PM - 6 AM / Gracia 8 PM a 9 AM)
             if (turno.horaFinGracia < turno.horaInicioGracia) {
-                 // Ejemplo: 8 PM a 8 AM. Nuevo ingreso solo es permitido hasta 10 PM.
-                 if (horaActual >= turno.horaInicioGracia) { // Es de noche (8 PM a 11 PM)
-                    puedeSeleccionar = true; // Permitir el ingreso en la noche
-                 } 
-                 // NO PERMITIR nuevos ingresos en la mañana (ej: a las 7 AM),
-                 // solo reingresos si ya lo había elegido (manejado arriba en lastSession).
+                // Permitir ingreso SOLO entre la hora de gracia de inicio (8 PM) y el final de la jornada (6 AM del día siguiente).
+                // Si la hora es 8 PM (20) o más, o si la hora es 6 AM o menos.
+                // Usamos la hora de FIN de la jornada (turno.horaFin = 6) como el límite en la madrugada para que solo aparezca el turno de 10 PM.
+                
+                if (horaActual >= turno.horaInicioGracia || horaActual < turno.horaFin) {
+                    puedeIngresar = true;
+                }
+
             } else {
-                 // Es diurno, si está activo, se puede seleccionar
-                 puedeSeleccionar = true;
+                // Turnos diurnos (6-2, 8-4, 2-10)
+                // REGLA: El turno SOLO debe aparecer si la hora actual es antes de la HORA DE INICIO del turno + 3 horas de gracia.
+                // Es decir, solo debe aparecer si aún es un tiempo razonable para INICIAR el turno, no para reingresar.
+                
+                // Si la hora actual es menor que la HORA DE FIN DE GRACIA del turno.
+                // * Ejemplo: Turno 6-2 (Gracia hasta 5 PM/17). Si son las 6 PM (18), NO debe aparecer.
+                
+                if (horaActual < turno.horaFinGracia) {
+                    // Y es mayor o igual a la hora de gracia de inicio
+                    if (horaActual >= turno.horaInicioGracia) {
+                        puedeIngresar = true;
+                    }
+                }
             }
-        }
-        
-        if (puedeSeleccionar) {
-            // Solo agregar a disponibles si pasa todas las reglas
-            const descripcion = (lastSession && lastSession.dia === diaActual && lastSession.turnoKey === key) 
-                                ? "Reingreso al turno de hoy" 
-                                : "Turno disponible";
-            turnosDisponibles.push({ key, ...turno, descripcion: descripcion });
-        }
-    });
-    
+
+            if (puedeIngresar) {
+                turnosDisponibles.push({ key, ...turno, descripcion: "Turno disponible" });
+            }
+        });
+    }
+// =========================================================================
+
     if (turnosDisponibles.length === 0) {
-        let mensaje = 'No hay turnos disponibles en este momento.';
-        if (lastSession && lastSession.dia === diaActual) {
-            mensaje += '\nSu turno ya ha terminado por hoy (acceso bloqueado hasta mañana).';
-        }
-        alert(mensaje);
-        logout(); 
+        alert('No hay turnos disponibles para selección. Ya seleccionaste un turno hoy o el horario no corresponde.');
+        logout();
         return;
     }
-    
+
     const loginSection = document.getElementById('loginSection');
-    // Asegúrate de que el HTML usa el array `turnosDisponibles`
     loginSection.innerHTML = `
         <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
         <h1 class="titulo-degradado">CLESA</h1>
         <p class="subtitulo">Seleccione su Turno de Trabajo</p>
-        
-        <div class="table-selector">
+                <div class="table-selector">
             ${turnosDisponibles.map(turno => `
                 <div class="table-option" onclick="seleccionarTurno('${turno.key}')">
                     <span class="table-icon">🕐</span>
@@ -1349,11 +1388,10 @@ function mostrarSeleccionTurno() {
                 </div>
             `).join('')}
         </div>
-        <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Cancelar / Cerrar Sesión</button>
+        <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Cancelar</button>
     `;
 }
 
-// ... (Otras funciones auxiliares)
 
 // === FUNCIÓN AUXILIAR: GUARDAR TURNO EN SESIÓN ===
 function guardarTurnoEnSesion(turnoKey) {
@@ -1370,14 +1408,20 @@ function guardarTurnoEnSesion(turnoKey) {
 // === FUNCIÓN PARA SELECCIONAR EL TURNO (MODIFICADA) ===
 function seleccionarTurno(turnoKey) {
     const turno = TURNOS_ATTF[turnoKey];
+    const ahora = new Date();
+    const diaActual = ahora.toDateString();
+    
     currentUser.turno = turnoKey;
     currentUser.turnoNombre = turno.nombre;
     
-    // 💡 LLAMADA A LA FUNCIÓN PARA GUARDAR EL TURNO EN EL NAVEGADOR
-    guardarTurnoEnSesion(turnoKey);
+    // Guardar selección de turno con fecha
+    sessionStorage.setItem('attf_last_turn', JSON.stringify({
+        turnoKey: turnoKey,
+        dia: diaActual,
+        horaInicio: ahora.toISOString()
+    }));
     
-    // ... (El resto de la función sigue igual)
-    // Programar cierre automático de sesión al final del turno
+    // Programar cierre automático
     programarCierreSesion(turno);
     
     document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
@@ -1390,49 +1434,32 @@ function seleccionarTurno(turnoKey) {
     mostrarTablasSegunRol();
 }
 
-// ... (El resto del código)
-
-function seleccionarTurno(turnoKey) {
-  const turno = TURNOS_ATTF[turnoKey];
-  currentUser.turno = turnoKey;
-  currentUser.turnoNombre = turno.nombre;
-  
-  // Programar cierre automático de sesión al final del turno
-  programarCierreSesion(turno);
-  
-  document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
-  document.getElementById('userInfo').classList.remove('hidden');
-  document.getElementById('loginSection').style.display = 'none';
-  document.getElementById('tableSelectionSection').style.display = 'block';
-  
-  iniciarVerificacionSesion();
-  guardarDatosOffline();
-  mostrarTablasSegunRol();
-}
-
 function programarCierreSesion(turno) {
-  const ahora = new Date();
-  let horaFin = turno.horaFin;
-  let fechaCierre = new Date();
-  
-  if (turno.horaFin < turno.horaInicio) {
-    // Turno nocturno, el cierre es al día siguiente
-    if (ahora.getHours() >= turno.horaInicio) {
-      fechaCierre.setDate(fechaCierre.getDate() + 1);
+    const ahora = new Date();
+    let fechaCierre = new Date();
+    
+    if (turno.horaFinGracia < turno.horaInicioGracia) {
+        // Turno nocturno: cierre al día siguiente
+        if (ahora.getHours() >= turno.horaInicioGracia) {
+            fechaCierre.setDate(fechaCierre.getDate() + 1);
+        }
+        fechaCierre.setHours(turno.horaFinGracia, 0, 0, 0);
+    } else {
+        // Turno diurno
+        fechaCierre.setHours(turno.horaFinGracia, 0, 0, 0);
     }
-  }
-  
-  fechaCierre.setHours(horaFin, 0, 0, 0);
-  
-  const tiempoRestante = fechaCierre.getTime() - ahora.getTime();
-  
-  if (tiempoRestante > 0) {
-    setTimeout(() => {
-      alert('Su turno ha terminado. La sesión se cerrará automáticamente.');
-      logout();
-    }, tiempoRestante);
-  }
+    
+    const tiempoRestante = fechaCierre.getTime() - ahora.getTime();
+    
+    if (tiempoRestante > 0) {
+        setTimeout(() => {
+            alert('Su turno ha terminado. La sesión se cerrará automáticamente.');
+            logout();
+        }, tiempoRestante);
+    }
 }
+
+
       function mostrarTablasSegunRol() {
      if (!currentUser || !currentUser.rol) {
     console.log('❌ currentUser no está disponible');
