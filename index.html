@@ -1359,38 +1359,43 @@ function guardarTurnoEnSesion(turnoKey) {
 
 // === FUNCIÓN PARA SELECCIONAR EL TURNO (UNIFICADA Y CORREGIDA) ===
 function seleccionarTurno(turnoKey) {
-    // 1. Verificar la Regla de Turno Único
-    if (currentUser.turno) {
-        alert('Error: Ya tiene un turno asignado y activo. No puede seleccionar otro.');
-        return; 
-    }
-
     const turno = TURNOS_ATTF[turnoKey];
     const ahora = new Date();
     
-    // 2. Asignar y Guardar el Turno en el objeto currentUser (Persistencia)
-    currentUser.turno = turnoKey;
+    // 1. Validar que no tenga turno asignado
+    if (currentUser.turnoAsignado) {
+        alert('Error: Ya tiene un turno asignado y activo. Debe cerrar sesión para finalizar el turno actual.');
+        return; 
+    }
+
+    // 2. Asignar turno
+    currentUser.turnoAsignado = turnoKey;
     currentUser.turnoNombre = turno.nombre;
-    // La fecha actual de ingreso es crucial para validar al reingresar
-    currentUser.diaIngreso = ahora.toDateString(); 
+    currentUser.diaIngreso = ahora.toDateString();
     
-    // 3. Guardar en localStorage para que persista (CRÍTICO)
-    // Usamos guardarDatosOffline() si ya tienes esa función que guarda currentUser en localStorage.
-    // Si no tienes una función específica, simplemente:
-    localStorage.setItem('currentUser', JSON.stringify(currentUser)); 
+    // 3. Guardar en sessionStorage
+    sessionStorage.setItem('attf_last_turn', JSON.stringify({
+        turnoKey: turnoKey,
+        dia: ahora.toDateString(),
+        horaInicio: ahora.toISOString()
+    }));
     
-    // 4. Programar cierre automático
-    programarCierreSesion(turno);
+    // 4. Programar verificación de corte
+    setInterval(verificarCorteTurno, 5 * 60 * 1000);
     
-    // 5. Actualizar la interfaz y continuar
+    // 5. Actualizar interfaz
     document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('tableSelectionSection').style.display = 'block';
     
-    iniciarVerificacionSesion();
-    guardarDatosOffline(); // Si esta función existe, debe guardar el objeto 'currentUser'
+    // 6. ⭐ CRÍTICO: Llamar a mostrarTablasSegunRol() AQUÍ
+    console.log('🔧 Filtrando tablas según rol:', currentUser.rol);
     mostrarTablasSegunRol();
+    
+    // 7. Otras funciones
+    iniciarVerificacionSesion();
+    guardarDatosOffline();
 }
 
 
@@ -2899,4 +2904,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
