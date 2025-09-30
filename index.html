@@ -1259,33 +1259,43 @@ function generarKMLString(ubicaciones) {
 function mostrarSeleccionTurno() {
     const ahora = new Date();
     const horaActual = ahora.getHours();
-    const turnosDisponibles = [];
     const diaActual = ahora.toDateString();
     
+    // VALIDACIÓN: Si ya tiene turno asignado, ir directo al menú
+    if (currentUser.turnoAsignado) {
+        console.log('✅ Usuario ya tiene turno asignado:', currentUser.turnoAsignado);
+        document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+        
+        mostrarTablasSegunRol();
+        iniciarVerificacionSesion();
+        setInterval(verificarCorteTurno, 5 * 60 * 1000);
+        return;
+    }
+    
+    const turnosDisponibles = [];
     const lastSession = JSON.parse(sessionStorage.getItem('attf_last_turn'));
     
     // SI YA ELIGIÓ UN TURNO HOY, solo permitir reingreso al mismo turno
     if (lastSession && lastSession.dia === diaActual) {
         const turnoAnterior = TURNOS_ATTF[lastSession.turnoKey];
         
-        // Verificar si el turno anterior aún está en su ventana de gracia
         let turnoAunValido = false;
         if (turnoAnterior.horaFinGracia < turnoAnterior.horaInicioGracia) {
-            // Turno nocturno
             turnoAunValido = horaActual >= turnoAnterior.horaInicioGracia || horaActual < turnoAnterior.horaFinGracia;
         } else {
             turnoAunValido = horaActual >= turnoAnterior.horaInicioGracia && horaActual < turnoAnterior.horaFinGracia;
         }
         
         if (turnoAunValido) {
-            // Permitir SOLO reingreso al turno que ya eligió
             turnosDisponibles.push({ 
                 key: lastSession.turnoKey, 
                 ...turnoAnterior, 
                 descripcion: "Continuar en tu turno de hoy" 
             });
         } else {
-            // El turno ya expiró, bloquear hasta mañana
             alert('Tu turno de hoy ha finalizado. Podrás acceder nuevamente mañana.');
             logout();
             return;
@@ -1296,18 +1306,12 @@ function mostrarSeleccionTurno() {
             let puedeIngresar = false;
             
             if (turno.horaFinGracia < turno.horaInicioGracia) {
-                // Turno nocturno (10 PM - 6 AM)
-                // Permitir ingreso SOLO en la noche (20:00 - 23:59)
                 if (horaActual >= turno.horaInicioGracia) {
                     puedeIngresar = true;
                 }
-                // En la madrugada (00:00 - 08:59), solo si ya lo eligió ayer
-                // Pero como estamos en "primer ingreso del día", NO permitimos en madrugada
             } else {
-                // Turnos diurnos (6-2, 8-4, 2-10)
-                // Permitir ingreso si está en la ventana de inicio (no después de horaFin)
                 if (horaActual >= turno.horaInicioGracia && horaActual < turno.horaFinGracia) {
-        	    puedeIngresar = true;
+                    puedeIngresar = true;
                 }
             }
             
@@ -1341,7 +1345,6 @@ function mostrarSeleccionTurno() {
         <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Cancelar</button>
     `;
 }
-
 
 // ... (Otras funciones auxiliares)
 
@@ -2745,6 +2748,10 @@ function verificarDatosOffline() {
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('tableSelectionSection').style.display = 'block';
+            
+            // NUEVO: Filtrar tablas según rol al restaurar sesión
+            console.log('🔄 Restaurando sesión - Filtrando tablas para rol:', currentUser.rol);
+            mostrarTablasSegunRol();
             
             // Reiniciar verificación de corte de turno si es ATTF
             if (currentUser.rol === 'ATTF' && currentUser.turnoAsignado) {
