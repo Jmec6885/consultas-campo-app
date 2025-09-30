@@ -1420,48 +1420,49 @@ function programarCierreSesion(turno) {
 
 
       function mostrarTablasSegunRol() {
-     if (!currentUser || !currentUser.rol) {
-    console.log('❌ currentUser no está disponible');
-    return;
-  }
-  const tableOptions = document.querySelectorAll('.table-option');
-  
-  if (currentUser.rol === 'Lectura') {
-    // Rol Lectura: Solo consultas_servicios
-    tableOptions.forEach(option => {
-      const onclick = option.getAttribute('onclick');
-      if (!onclick.includes('consultas_servicios')) {
-        option.style.display = 'none';
-      } else {
-        option.style.display = 'block';
-      }
-    });
-  } else if (currentUser.rol === 'Contratista') {
-    // Rol Contratista: Mantener funcionalidad actual (todas las tablas)
-    tableOptions.forEach(option => {
-      option.style.display = 'block';
-    });
-  } else if (currentUser.rol === 'ATTF') {
-    // Rol ATTF: Solo consultas_servicios y TX y Cortes
-    tableOptions.forEach(option => {
-      const onclick = option.getAttribute('onclick');
-      if (onclick.includes('consultas_servicios') || onclick.includes('TX y Cortes')) {
-        option.style.display = 'block';
-      } else {
-        option.style.display = 'none';
-      }
-    });
-  } else if (currentUser.rol === 'Supervisor') {
-    // Rol Supervisor: Acceso completo a todas las tablas
-    tableOptions.forEach(option => {
-      option.style.display = 'block';
-    });
-  } else {
-    // Rol Consulta y cualquier otro: Acceso completo (todas las tablas)
-    tableOptions.forEach(option => {
-      option.style.display = 'block';
-    });
-  }
+    if (!currentUser || !currentUser.rol) {
+        console.log('❌ currentUser no está disponible');
+        return;
+    }
+    
+    const tableOptions = document.querySelectorAll('.table-option');
+    
+    if (currentUser.rol === 'Lectura') {
+        // Rol Lectura: Solo consultas_servicios
+        tableOptions.forEach(option => {
+            const onclick = option.getAttribute('onclick');
+            if (onclick && onclick.includes('consultas_servicios')) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    } else if (currentUser.rol === 'ATTF') {
+        // Rol ATTF: Solo consultas_servicios y TX y Cortes
+        tableOptions.forEach(option => {
+            const onclick = option.getAttribute('onclick');
+            if (onclick && (onclick.includes('consultas_servicios') || onclick.includes('TX y Cortes'))) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    } else if (currentUser.rol === 'Contratista') {
+        // Rol Contratista: Todas las tablas
+        tableOptions.forEach(option => {
+            option.style.display = 'block';
+        });
+    } else if (currentUser.rol === 'Supervisor') {
+        // Rol Supervisor: Todas las tablas
+        tableOptions.forEach(option => {
+            option.style.display = 'block';
+        });
+    } else {
+        // Rol Consulta y cualquier otro: Todas las tablas
+        tableOptions.forEach(option => {
+            option.style.display = 'block';
+        });
+    }
 }
 
 function iniciarVerificacionSesion() {
@@ -2895,4 +2896,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
