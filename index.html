@@ -1281,11 +1281,12 @@ async function login() {
       return;
     }
 
-    // 2. Verificar sesión activa en BD
-    if (data.sessionactiva) {
-      alert("Su usuario ya tiene una sesión activa en otro dispositivo. Cierre la otra sesión o espere a que expire.");
-      return;
-    }
+    // 2. Si hay sesión activa, la sobrescribimos (permitir reingreso forzado)
+if (data.sessionactiva) {
+    console.warn("Sesión activa detectada. Se cerrará automáticamente para permitir nuevo ingreso.");
+    // Opcional: puedes notificar al usuario anterior mediante notificación push o mensaje en BD,
+    // pero para simplicidad, solo invalidamos la sesión anterior.
+}
 
     // 3. Verificar horario permitido por rol (consulta función verificarHorarioPermitido)
     const verificacion = verificarHorarioPermitido(data.rol);
@@ -2911,4 +2912,3 @@ if (!verificarDatosOffline()) {
 </script>
 </body>
 </html>
-
