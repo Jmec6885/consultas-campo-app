@@ -11,515 +11,551 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2 "></script>
     <style>
-        /* Variables de color para toda la aplicación */
-        :root {
-            --color-azul: #3b54d3;
-            --color-verde: #3ac99c;
-            --color-fondo: #f0f5f9;
-            --color-error: #d32f2f;
-            --color-success: #2e7d32;
-            --color-naranja: #ff6b35;
-            --color-purpura: #8b5cf6;
-        }
+    /* Variables de color para toda la aplicación */
+    :root {
+        --color-azul: #3b54d3;
+        --color-verde: #3ac99c;
+        --color-fondo: #f0f5f9;
+        --color-error: #d32f2f;
+        --color-success: #2e7d32;
+        --color-naranja: #ff6b35;
+        --color-purpura: #8b5cf6;
+    }
 
-        /* Estilos globales y de fondo */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    /* Estilos globales y de fondo */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        html {
-            font-size: 16px;
-            height: 100%;
-        }
+    html {
+        font-size: 16px;
+        height: 100%;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--color-fondo) 0%, #e3f2fd 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            position: relative;
-        }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, var(--color-fondo) 0%, #e3f2fd 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        position: relative;
+    }
 
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 80%, rgba(59, 84, 211, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(58, 201, 156, 0.1) 0%, transparent 50%);
-            z-index: -1;
-        }
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 80%, rgba(59, 84, 211, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(58, 201, 156, 0.1) 0%, transparent 50%);
+        z-index: -1;
+    }
 
-        /* Contenedores y Tarjetas */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            width: 100%;
-        }
+    /* Contenedores y Tarjetas */
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        width: 100%;
+    }
 
-        .card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            margin-bottom: 20px;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-            animation: slideIn 0.6s ease-out;
-        }
+    .card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        margin-bottom: 20px;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+        animation: slideIn 0.6s ease-out;
+    }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
-        }
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
+    }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
         }
-
-        /* Estilos del logo y títulos */
-        .logo {
-            height: 70px;
-            width: auto;
-            max-width: 100%;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        }
-        
-        .titulo-degradado {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            user-select: none;
-            margin-bottom: 10px;
-            margin-top: 0;
-        }
-
-        .subtitulo {
-            color: #666;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 30px;
-        }
-
-        /* Formulario y botones */
-        .login-form {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #4a5568;
-        }
-
-        input[type="text"], input[type="password"], select {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--color-azul);
-            outline: none;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(59, 84, 211, 0.1);
-        }
-
-        input::placeholder {
-            color: #999;
-            font-weight: 500;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, var(--color-azul), var(--color-verde));
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 700;
-            width: 100%;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 84, 211, 0.3);
-        }
-
-        .btn:active {
+        to {
+            opacity: 1;
             transform: translateY(0);
         }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #4299e1, #2b6cb0);
-            width: auto;
-            min-width: 120px;
-            padding: 12px 24px;
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #e53e3e, #c53030);
-            width: auto;
-            padding: 8px 16px;
-            margin-left: 10px;
-        }
-
-        .btn-back {
-            background: linear-gradient(135deg, var(--color-naranja), #e55a2b);
-            width: auto;
-            padding: 10px 20px;
-            margin-bottom: 20px;
-        }
-
-        /* Selector de tablas */
-        .table-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .table-option {
-            background: linear-gradient(135deg, #f7fafc, #edf2f7);
-            border: 3px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .table-option:hover {
-            border-color: var(--color-azul);
-            background: linear-gradient(135deg, #ebf8ff, #bee3f8);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(59, 84, 211, 0.15);
-        }
-
-        .table-option.selected {
-            border-color: var(--color-verde);
-            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
-        }
-
-        .table-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .table-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-
-        .table-description {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        /* Secciones de la app */
-        .table-selection-section, .search-section, .admin-section {
-            display: none;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .result-card {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            text-align: left;
-        }
-        
-        .result-header {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 15px;
-        }
-
-        .result-item {
-            margin-bottom: 10px;
-            padding: 5px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .result-label {
-            font-weight: 600;
-            color: #4a5568;
-        }
-        
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .footer {
-            margin-top: 30px;
-            font-weight: 600;
-            color: #666;
-            font-size: 14px;
-            text-align: center;
-        }
-        
-        /* Loading spinner y mensajes */
-        .loading {
-            display: none;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .user-info {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 10px 15px;
-            border-radius: 8px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Modal para gráficas */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            padding: 20px;
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 2% auto;
-            padding: 20px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 1000px;
-            max-height: 90%;
-            overflow-y: auto;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .close:hover {
-            color: #000;
-        }
-        
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
-            margin-top: 20px;
-        }
-        
-        .chart-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        
-        .chart-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 400px;
-        }
-        
-       @media (max-width: 768px) {
-    /* Reducir padding del body y container */
-    body {
-        padding: 10px;
     }
-    
-    .container {
+
+    /* Estilos del logo y títulos */
+    .logo {
+        height: 70px;
+        width: auto;
         max-width: 100%;
-        padding: 5px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
     
-    /* Hacer las tarjetas más anchas y con menos padding */
-    .card {
-        padding: 20px 15px;
-        margin-bottom: 15px;
-        border-radius: 15px;
-    }
-    
-    /* Ajustar cuadros de resultados */
-    .result-card {
-        padding: 15px;
-        margin-top: 15px;
-        border-radius: 10px;
-    }
-    
-    /* Mejorar el espacio de los elementos de resultado */
-    .result-item {
-        margin-bottom: 15px;
-        padding: 8px 0;
-        border-bottom: 2px solid #e2e8f0;
-        line-height: 1.6;
-    }
-    
-    .result-item strong {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #2d3748;
-    }
-    
-    /* Ajustes para otros elementos */
-    .search-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    .table-selector {
-        grid-template-columns: 1fr;
-    }
-    .action-buttons {
-        flex-direction: column;
-        gap: 8px;
-    }
-    .btn-secondary, .btn-danger {
-        width: 100%;
-        margin: 0;
-        font-size: 14px !important;
-        padding: 10px 15px !important;
-    }
-    .modal-content {
-        width: 95%;
-        margin: 5% auto;
-        padding: 15px;
-    }
-    .chart-container {
-        height: 300px;
-    }
-    .user-info {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin-bottom: 15px;
-        justify-content: center;
-    }
-    
-    /* Hacer los títulos más pequeños en móvil */
     .titulo-degradado {
-        font-size: 2rem;
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        user-select: none;
+        margin-bottom: 10px;
+        margin-top: 0;
+    }
+
+    .subtitulo {
+        color: #666;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 30px;
+    }
+
+    /* Formulario y botones */
+    .login-form {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    input[type="text"], input[type="password"], select {
+        width: 100%;
+        padding: 15px 20px;
+        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+    input:focus, select:focus {
+        border-color: var(--color-azul);
+        outline: none;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(59, 84, 211, 0.1);
+    }
+
+    input::placeholder {
+        color: #999;
+        font-weight: 500;
+    }
+
+    .btn {
+        background: linear-gradient(135deg, var(--color-azul), var(--color-verde));
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 700;
+        width: 100%;
+        margin-top: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 84, 211, 0.3);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #4299e1, #2b6cb0);
+        width: auto;
+        min-width: 120px;
+        padding: 12px 24px;
     }
     
-    /* Mejorar legibilidad de enlaces */
-    .result-item a {
-        display: inline-block;
-        margin: 5px 0;
-        padding: 8px 12px;
-        background: #f0f9ff;
+    .btn-danger {
+        background: linear-gradient(135deg, #e53e3e, #c53030);
+        width: auto;
+        padding: 8px 16px;
+        margin-left: 10px;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, var(--color-naranja), #e55a2b);
+        width: auto;
+        padding: 10px 20px;
+        margin-bottom: 20px;
+    }
+
+    /* ESTILOS PARA LOS BOTONES DE SELECCIÓN DE DÍA DE DESCANSO */
+    .btn-day-selector {
+        background: #e2e8f0;
+        color: #2d3748;
+        border: 2px solid #cbd5e0;
+        padding: 10px 15px;
         border-radius: 8px;
-        border: 1px solid #3b54d3;
-    } /* ← Esta llave faltaba */
-} /* ← Est
-.btn-secondary {
-    font-size: 14px !important;
-    padding: 10px 15px !important;
-}
-}
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        margin: 5px; /* Añadir margen para separarlos */
+        width: 100%; /* Ocupar todo el ancho en el grid */
+    }
+
+    .btn-day-selector:hover {
+        background: #cfd8e3;
+    }
+
+    .btn-day-selector.selected {
+        background: var(--color-verde);
+        color: white;
+        border-color: var(--color-verde);
+        box-shadow: 0 4px 10px rgba(58, 201, 156, 0.4);
+    }
+
+    /* Selector de tablas (usado también para días de descanso) */
+    .table-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Optimizado para 7 días */
+        gap: 10px; /* Reducido el gap para que quepan */
+        margin-top: 20px;
+    }
+    
+    /* Mantener el diseño de tarjeta para las opciones de módulos */
+    .table-option {
+        background: linear-gradient(135deg, #f7fafc, #edf2f7);
+        border: 3px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .table-option:hover {
+        border-color: var(--color-azul);
+        background: linear-gradient(135deg, #ebf8ff, #bee3f8);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(59, 84, 211, 0.15);
+    }
+
+    .table-option.selected {
+        border-color: var(--color-verde);
+        background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+    }
+
+    .table-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .table-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+
+    .table-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    /* Secciones de la app */
+    /* La clase 'hidden' debería controlar la visibilidad */
+    .table-selection-section, .search-section, .admin-section {
+         /* Quitamos el display: none aquí y confiamos en la clase .hidden */
+    }
+
+    .search-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .result-card {
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: left;
+    }
+    
+    .result-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+    }
+
+    .result-item {
+        margin-bottom: 10px;
+        padding: 5px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .result-label {
+        font-weight: 600;
+        color: #4a5568;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .footer {
+        margin-top: 30px;
+        font-weight: 600;
+        color: #666;
+        font-size: 14px;
+        text-align: center;
+    }
+    
+    /* Loading spinner y mensajes */
+    .loading {
+        display: none;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .user-info {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.9);
+        padding: 10px 15px;
+        border-radius: 8px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Modal para gráficas */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        padding: 20px;
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 2% auto;
+        padding: 20px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 1000px;
+        max-height: 90%;
+        overflow-y: auto;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: #000;
+    }
+    
+    .charts-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+        margin-top: 20px;
+    }
+    
+    .chart-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+    }
+    
+    .chart-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+    
+    /* Media Query para móviles (Corregido) */
+    @media (max-width: 768px) {
+        /* Reducir padding del body y container */
+        body {
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 5px;
+        }
+        
+        /* Hacer las tarjetas más anchas y con menos padding */
+        .card {
+            padding: 20px 15px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+        }
+        
+        /* Ajustar cuadros de resultados */
+        .result-card {
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 10px;
+        }
+        
+        /* Mejorar el espacio de los elementos de resultado */
+        .result-item {
+            margin-bottom: 15px;
+            padding: 8px 0;
+            border-bottom: 2px solid #e2e8f0;
+            line-height: 1.6;
+        }
+        
+        .result-item strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #2d3748;
+        }
+        
+        /* Ajustes para otros elementos */
+        .search-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .table-selector {
+            grid-template-columns: 1fr;
+        }
+        .action-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-secondary, .btn-danger {
+            width: 100%;
+            margin: 0 !important;
+            font-size: 14px !important;
+            padding: 10px 15px !important;
+        }
+        .modal-content {
+            width: 95%;
+            margin: 5% auto;
+            padding: 15px;
+        }
+        .chart-container {
+            height: 300px;
+        }
+        .user-info {
+            position: relative;
+            top: auto;
+            right: auto;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        
+        /* Hacer los títulos más pequeños en móvil */
+        .titulo-degradado {
+            font-size: 2rem;
+        }
+        
+        /* Mejorar legibilidad de enlaces */
+        .result-item a {
+            display: inline-block;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            border: 1px solid #3b54d3;
+        }
+    } 
+    /* Estilos globales para botones de seguridad que se aplicaron incorrectamente */
+    .btn-secondary {
+        font-size: 14px;
+        padding: 10px 15px;
+    }
 
 
 
-    </style>
+
+        </style>
 </head>
 <body>
     <div class="container">
+        
         <div class="user-info hidden" id="userInfo">
             <span id="currentUser"></span>
             <button class="btn btn-danger" onclick="logout()">Salir</button>
         </div>
 
-        <!-- Sección de Login -->
         <div class="card" id="loginSection">
             <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png " alt="Logo CLESA" class="logo">
             <h1 class="titulo-degradado">CLESA</h1>
@@ -530,7 +566,6 @@
                     <label for="username">Usuario:</label>
                     <input type="text" id="username" placeholder="Ingrese su usuario" value="admin">
                     <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
-                      
                     </small>
                 </div>
                 <div class="form-group">
@@ -548,10 +583,12 @@
             
             <div class="table-selector" id="diasDescansoContainer">
                 </div>
+            
             <button class="btn" id="btnConfirmarDescanso" style="width: 100%; margin-top: 20px;" disabled>Confirmar Descanso</button>
             <button class="btn btn-back" onclick="logout()" style="width: 100%; margin-top: 10px;">Cancelar y Salir</button>
         </div>
-        <div class="table-selection-section" id="tableSelectionSection">
+        
+        <div class="table-selection-section hidden" id="tableSelectionSection">
             <div class="card">
                 <h2>Seleccione el Módulo de Consulta</h2>
                 <p class="subtitulo">Elija el tipo de información que desea consultar</p>
@@ -562,7 +599,7 @@
                         <div class="table-title">Consultas de Servicios</div>
                         <div class="table-description">Información general de servicios y clientes</div>
                     </div>
-                                        
+                                            
                     <div class="table-option" onclick="seleccionarTabla('OS Pendientes')">
                         <span class="table-icon">⏳</span>
                         <div class="table-title">OS Pendientes</div>
@@ -584,22 +621,19 @@
             </div>
         </div>
 
-        <!-- Sección de Búsqueda -->
-        <div class="search-section" id="searchSection">
+        <div class="search-section hidden" id="searchSection">
             <div class="card">
                 <button class="btn btn-back" onclick="volverATablas()">← Volver a Módulos</button>
                 <div class="header">
                     <h2 id="searchTitle">Consultar Información</h2>
                 </div>
                 <div class="search-grid" id="searchGrid">
-                    <!-- Se genera dinámicamente según la tabla seleccionada -->
                 </div>
                 <div id="searchResults"></div>
             </div>
         </div>
 
-        <!-- Panel de Administración -->
-        <div class="admin-section" id="adminSection">
+        <div class="admin-section hidden" id="adminSection">
             <div class="card">
                 <button class="btn btn-back" onclick="volverATablas()">← Volver a Módulos</button>
                 <div class="header">
@@ -613,15 +647,12 @@
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="procesarArchivos()">📊 Procesar Archivos</button>
                     <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Datos</button>
-
-
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para gráficas -->
-    <div id="chartsModal" class="modal">
+    <div id="chartsModal" class="modal hidden">
         <div class="modal-content">
             <span class="close" onclick="cerrarGraficas()">×</span>
             <h2 id="modalTitle">Gráficas de Consumo y Lecturas</h2>
@@ -636,8 +667,6 @@
                     <div class="chart-title">📈 Historial de Lecturas</div>
                     <div class="chart-container">
                         <canvas id="lecturasChart"></canvas>
-
-
                     </div>
                 </div>
             </div>
@@ -648,9 +677,10 @@
 
 <script>
     // --- 1. DEFINICIÓN DE VARIABLES GLOBALES (Usar solo 'let', una vez) ---
+    const DIAS_SEMANA_NOMBRES = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
     let currentUser = null;
     let selectedTable = null;
-    let consultasData = []; 
+    let consultasData = [];
 
     // --- 2. CONFIGURACIÓN E INICIALIZACIÓN DE SUPABASE ---
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
@@ -845,47 +875,75 @@ async function seleccionarDiasDescanso(dia1, dia2) {
 }
 
 
+// === FUNCIÓN AUXILIAR PARA ESCONDER TODAS LAS SECCIONES ===
 function esconderTodasLasSecciones() {
     const sections = [
         'loginSection', 
         'seleccionDescansoSection', 
         'tableSelectionSection', 
         'searchSection', 
-        'adminSection'
+        'adminSection',
+        'userInfo' // También ocultamos la info de usuario
     ];
     sections.forEach(id => {
         const element = document.getElementById(id);
         if (element) {
-            element.classList.add('hidden');
-            element.style.display = 'none'; // Seguridad total
+            // Usamos BOTH para máxima compatibilidad
+            element.classList.add('hidden'); 
+            element.style.display = 'none'; 
         }
     });
+    document.getElementById('chartsModal').classList.add('hidden');
 }
 
-/function mostrarSeleccionDescanso() {
-    console.log('🔄 Activando pantalla de Selección de Descanso (Usando classList)'); 
+function mostrarSeleccionDescanso() {
+    console.log('🔄 Activando pantalla de Selección de Descanso'); 
+    
+    // 0. Limpiar TODAS las secciones antes de mostrar solo una.
+    esconderTodasLasSecciones(); 
 
-    const loginSection = document.getElementById('loginSection');
     const descansoSection = document.getElementById('seleccionDescansoSection');
+    const container = document.getElementById('diasDescansoContainer');
+    const btnConfirmar = document.getElementById('btnConfirmarDescanso');
+    
+    // Resetear variables y estado
+    let diasSeleccionados = [];
+    btnConfirmar.disabled = true;
+    container.innerHTML = ''; // Limpiar botones anteriores
 
-    // 1. Ocultar login (AÑADIR la clase 'hidden')
-    if (loginSection) {
-        loginSection.classList.add('hidden');
-        loginSection.style.display = 'none'; // Seguridad extra
-    }
-
-    // 2. Mostrar la sección de descanso (REMOVER la clase 'hidden')
+    // 1. Mostrar la sección de descanso
     if (descansoSection) {
-        descansoSection.classList.remove('hidden'); // ESTO es la clave
-        descansoSection.style.display = 'block';    // Seguridad extra
+        descansoSection.classList.remove('hidden'); 
+        descansoSection.style.display = 'block';   
     }
     
-    // 3. Asegúrate de ocultar el menú principal si estaba visible (puede que se muestre en un flujo posterior)
-    const tableSelectionSection = document.getElementById('tableSelectionSection');
-    if (tableSelectionSection) {
-        tableSelectionSection.style.display = 'none';
-        tableSelectionSection.classList.add('hidden');
-    }
+    // 2. Generar los botones de los días (LUNES a DOMINGO)
+    DIAS_SEMANA_NOMBRES.slice(1).forEach(dia => { // Empezamos desde el LUNES
+        const button = document.createElement('button');
+        button.textContent = dia;
+        button.className = 'btn btn-day-selector'; // Asegúrate de definir este estilo en tu CSS
+        button.onclick = function() {
+            if (diasSeleccionados.includes(dia)) {
+                // Deseleccionar
+                diasSeleccionados = diasSeleccionados.filter(d => d !== dia);
+                button.classList.remove('selected');
+            } else if (diasSeleccionados.length < 2) {
+                // Seleccionar
+                diasSeleccionados.push(dia);
+                button.classList.add('selected');
+            }
+            // Habilitar/Deshabilitar el botón de confirmar
+            btnConfirmar.disabled = diasSeleccionados.length !== 2;
+        };
+        container.appendChild(button);
+    });
+    
+    // 3. Conectar el botón de confirmar al evento
+    btnConfirmar.onclick = () => {
+        if (diasSeleccionados.length === 2) {
+            seleccionarDiasDescanso(diasSeleccionados[0], diasSeleccionados[1]);
+        }
+    };
 }
 
 async function login() {
