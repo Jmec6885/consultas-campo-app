@@ -542,7 +542,15 @@
             <p class="footer">By. Jose Meneses</p>
         </div>
 
-        <!-- Sección de Selección de Tablas -->
+        <div class="card hidden" id="seleccionDescansoSection">
+            <h2 class="titulo-degradado">Selección de Días de Descanso</h2>
+            <p class="subtitulo">Por favor, elija sus dos días libres (Lun-Dom) para las próximas semanas.</p>
+            
+            <div class="table-selector" id="diasDescansoContainer">
+                </div>
+            <button class="btn" id="btnConfirmarDescanso" style="width: 100%; margin-top: 20px;" disabled>Confirmar Descanso</button>
+            <button class="btn btn-back" onclick="logout()" style="width: 100%; margin-top: 10px;">Cancelar y Salir</button>
+        </div>
         <div class="table-selection-section" id="tableSelectionSection">
             <div class="card">
                 <h2>Seleccione el Módulo de Consulta</h2>
@@ -3007,4 +3015,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
