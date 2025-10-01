@@ -933,24 +933,33 @@ async function login() {
         currentUser = { ...data, session_token: sessionToken };
 
          if (data.rol === 'ATTF' || data.rol === 'Poda') {
-        const fechaFinDescanso = data.descanso_fecha_fin;
+        const fechaFinDescanso = data.descanso_fecha_fin;
 
-        // A. Verificar si el bloqueo de DESCANSO ha expirado o no está configurado
-        if (!fechaFinDescanso || new Date(fechaFinDescanso) <= new Date()) {
-            console.log('👷 Usuario', data.rol, '- Bloqueo expirado. Mostrando selección de descanso.');
-            mostrarSeleccionDescanso(); 
-            return;
-        }
-        
-        // B. Verificar si HOY es un día de descanso (BLOQUEO ACTIVO)
-        const diasBloqueo = data.dias_descanso.split(',');
-        // Obtener el día actual en el mismo formato que se guarda (ej: "LUNES")
-        const diaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long' }).toUpperCase();
-        
-        if (diasBloqueo.includes(diaActual)) {
-            // El usuario no puede trabajar hoy, está en descanso
-            alert(`Hoy es ${diaActual}, su día de descanso. Podrá ingresar a partir de ${fechaFinDescanso}.`);
-            return; // Bloquea el ingreso y no inicia sesión
+        // A. Verificar si el bloqueo de DESCANSO ha expirado o no está configurado
+        if (!fechaFinDescanso || new Date(fechaFinDescanso) <= new Date()) {
+            console.log('👷 Usuario', data.rol, '- Bloqueo expirado. Mostrando selección de descanso.');
+            mostrarSeleccionDescanso(); 
+            return;
+        }
+        
+        // === INICIO DE LA MODIFICACIÓN ===
+        // Verificar que dias_descanso exista y no esté vacío antes de continuar.
+        if (!data.dias_descanso) {
+            // Si tiene fecha_fin pero NO tiene dias_descanso, es un estado inconsistente.
+            // Para evitar un error crítico, lo mandamos al menú principal o mostramos un error.
+            // Lo más seguro es que este IF nunca debería ejecutarse si la BD es consistente.
+            console.error('⚠️ Error: Tiene fecha de fin de descanso pero no días asignados. Continuando al menú.');
+        } else {
+            // B. Verificar si HOY es un día de descanso (BLOQUEO ACTIVO)
+            const diasBloqueo = data.dias_descanso.split(','); // <-- Ahora es seguro hacer .split()
+            // Obtener el día actual en el mismo formato que se guarda (ej: "LUNES")
+            const diaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long' }).toUpperCase();
+            
+            if (diasBloqueo.includes(diaActual)) {
+                // El usuario no puede trabajar hoy, está en descanso
+                alert(`Hoy es ${diaActual}, su día de descanso. Podrá ingresar a partir de ${fechaFinDescanso}.`);
+                return; // Bloquea el ingreso y no inicia sesión
+            }
         }
 
         // C. Si no está en descanso, continuamos con la lógica específica de cada rol:
