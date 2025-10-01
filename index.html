@@ -755,7 +755,7 @@ function verificarHorarioPermitido(rol) {
     
     // 3. Consulta, Poda y Lectura (Horario restringido 5 AM - 8 PM)
     if (rol === 'Consulta' || rol === 'Poda' || rol === 'Lectura') {
-        if (horaActual >= 5 && horaActual < 23) {
+        if (horaActual >= 5 && horaActual < 20) {
             return { permitido: true, mensaje: '' };
         }
         return { permitido: false, mensaje: 'Acceso solo permitido de 5:00 AM a 8:00 PM.' };
@@ -1065,7 +1065,7 @@ async function login() {
                 // Verificar si necesita renovar días de descanso
                 if (!data.dias_descanso || !data.descanso_fecha_fin || new Date(data.descanso_fecha_fin) < new Date(fechaHoy)) {
                     console.log('🔄 Días de descanso expirados. Mostrando selección.');
-                    mostrarSeleccionDiasDescanso();
+                    mostrarSeleccionDescanso();
                     return;
                 }
                 
@@ -1126,7 +1126,7 @@ async function login() {
             
             // No tiene días o ya expiraron
             console.log('👷 Usuario Poda - Bloqueo expirado. Mostrando selección de descanso.');
-            mostrarSeleccionDiasDescanso();
+            mostrarSeleccionDescanso;
             return;
         }
 
@@ -1665,7 +1665,7 @@ function mostrarSeleccionTurno() {
 }
 
 // === FUNCIÓN PARA MOSTRAR SELECCIÓN DE DÍAS DE DESCANSO ===
-function mostrarSeleccionDiasDescanso() {
+function mostrarSeleccionDescanso {
     const loginSection = document.getElementById('loginSection');
     
     // Si ya tiene turno asignado (para ATTF), mostrarlo en el título
