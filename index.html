@@ -874,9 +874,48 @@ function esconderTodasLasSecciones() {
     document.getElementById('chartsModal').classList.add('hidden');
 }
 
-function mostrarSeleccionDescanso() {
-    console.log('🔄 Activando pantalla de Selección de Descanso'); 
-    // ... TODO EL CÓDIGO DE ESTA FUNCIÓN ...
+// === FUNCIÓN PARA MOSTRAR SELECCIÓN DE DÍAS DE DESCANSO ===
+function mostrarSeleccionDescanso() { // ✅ Paréntesis obligatorios
+    const loginSection = document.getElementById('loginSection');
+    // Si ya tiene turno asignado (para ATTF), mostrarlo en el título
+    let tituloExtra = '';
+    if (currentUser.turnoAsignado) {
+        tituloExtra = `<p style="color: #666; margin-top: 10px;">Turno: ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}</p>`;
+    }
+    loginSection.innerHTML = `
+        <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
+        <h1 class="titulo-degradado">CLESA</h1>
+        <p class="subtitulo">Seleccione sus 2 Días de Descanso</p>
+        ${tituloExtra}
+        <div style="max-width: 400px; margin: 0 auto;">
+            <p style="margin-bottom: 20px; color: #666;">Seleccione exactamente 2 días en los que NO tendrá acceso al sistema:</p>
+            <div id="diasDescansoContainer" style="display: grid; gap: 10px;">
+                ${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(dia => `
+                    <div class="dia-option" onclick="toggleDia('${dia}')" style="
+                        padding: 15px;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        text-align: center;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        background: #f7fafc;
+                    " data-dia="${dia}">
+                        ${dia}
+                    </div>
+                `).join('')}
+            </div>
+            <div id="mensajeSeleccion" style="margin: 15px 0; color: #666; font-size: 14px; text-align: center;">
+                Seleccione 2 días
+            </div>
+            <button class="btn" id="btnConfirmarDias" onclick="confirmarDiasDescanso()" disabled style="opacity: 0.5;">
+                Confirmar Días de Descanso
+            </button>
+            <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">
+                Cancelar
+            </button>
+        </div>
+    `;
 }
 
 async function login() {
@@ -950,62 +989,56 @@ async function login() {
 
          currentUser = { ...data, session_token: sessionToken };
 
+        
         // === MANEJO DE ROL ATTF ===
-        if (data.rol === 'ATTF') {
-            const fechaHoy = new Date().toISOString().split('T')[0];
-            
-            // Verificar días de descanso
-            if (data.dias_descanso && data.descanso_fecha_fin) {
-                const fechaFin = new Date(data.descanso_fecha_fin);
-                const hoy = new Date(fechaHoy);
-                
-                if (hoy <= fechaFin) {
-                    const diasDescanso = data.dias_descanso.split(',');
-                    const diaActualNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
-                    
-                    if (diasDescanso.includes(diaActualNombre)) {
-                        alert(`Hoy es ${diaActualNombre}, uno de sus días de descanso. No tiene acceso al sistema.`);
-                        await supabaseClient
-                            .from('usuarios')
-                            .update({ sessionactiva: false, sessiontoken: null })
-                            .eq('id', data.id);
-                        return;
-                    }
-                }
-            }
-            
-            // Verificar turno del día
-            if (data.turno_fecha === fechaHoy && data.turno_actual) {
-                console.log('✅ Usuario ATTF tiene turno del día:', data.turno_actual);
-                currentUser.turnoAsignado = data.turno_actual;
-                currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
-                currentUser.turno_fecha = data.turno_fecha;
-                currentUser.dias_descanso = data.dias_descanso;
-                currentUser.descanso_fecha_fin = data.descanso_fecha_fin;
-                
-                // Verificar si necesita renovar días de descanso
-                if (!data.dias_descanso || !data.descanso_fecha_fin || new Date(data.descanso_fecha_fin) < new Date(fechaHoy)) {
-                    console.log('🔄 Días de descanso expirados. Mostrando selección.');
-                    mostrarSeleccionDescanso();
-                    return;
-                }
-                
-                document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
-                document.getElementById('userInfo').classList.remove('hidden');
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('tableSelectionSection').style.display = 'block';
-                
-                mostrarTablasSegunRol();
-                iniciarVerificacionSesion();
-                guardarDatosOffline();
-                setInterval(verificarCorteTurno, 5 * 60 * 1000);
-                return;
-            }
-            
-            console.log('👷 Usuario ATTF - Mostrando selección de turno');
-            mostrarSeleccionTurno();
+if (data.rol === 'ATTF') {
+    const fechaHoy = new Date().toISOString().split('T')[0];
+
+    // === 1. Primero: verificar si ya tiene turno HOY ===
+    if (data.turno_fecha === fechaHoy && data.turno_actual) {
+        // Tiene turno → continuar
+        currentUser.turnoAsignado = data.turno_actual;
+        currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
+        currentUser.turno_fecha = data.turno_fecha;
+        currentUser.dias_descanso = data.dias_descanso;
+        currentUser.descanso_fecha_fin = data.descanso_fecha_fin;
+
+        // === 2. Verificar días de descanso ===
+        if (!data.dias_descanso || !data.descanso_fecha_fin || new Date(data.descanso_fecha_fin) < new Date(fechaHoy)) {
+            console.log('🔄 Días de descanso expirados o no asignados. Mostrando selección.');
+            mostrarSeleccionDescanso();
             return;
         }
+
+        // === 3. Validar si hoy es día de descanso ===
+        const diasDescanso = data.dias_descanso.split(',');
+        const diaActualNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
+        if (diasDescanso.includes(diaActualNombre)) {
+            alert(`Hoy es ${diaActualNombre}, uno de sus días de descanso. No tiene acceso al sistema.`);
+            await supabaseClient
+                .from('usuarios')
+                .update({ sessionactiva: false, sessiontoken: null })
+                .eq('id', data.id);
+            return;
+        }
+
+        // === 4. Todo OK → ir al menú ===
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+        mostrarTablasSegunRol();
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        setInterval(verificarCorteTurno, 5 * 60 * 1000);
+        return;
+    } else {
+        // === No tiene turno → mostrar selección de turno ===
+        console.log('👷 Usuario ATTF - Mostrando selección de turno');
+        mostrarSeleccionTurno();
+        return;
+    }
+}
 
         // === MANEJO DE ROL PODA ===
         if (data.rol === 'Poda') {
@@ -1046,7 +1079,7 @@ async function login() {
             }
             
             // No tiene días o ya expiraron
-            console.log('👷 Usuario Poda - Bloqueo expirado. Mostrando selección de descanso.');
+            console.log('👷 Usuario Poda - Sin días de descanso vigentes. Mostrando selección.');
             mostrarSeleccionDescanso();
             return;
         }
@@ -1585,152 +1618,9 @@ function mostrarSeleccionTurno() {
     `;
 }
 
-// === FUNCIÓN PARA MOSTRAR SELECCIÓN DE DÍAS DE DESCANSO ===
-function mostrarSeleccionDescanso () {
-    const loginSection = document.getElementById('loginSection');
-    
-    // Si ya tiene turno asignado (para ATTF), mostrarlo en el título
-    let tituloExtra = '';
-    if (currentUser.turnoAsignado) {
-        tituloExtra = `<p style="color: #666; margin-top: 10px;">Turno: ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}</p>`;
-    }
-    
-    loginSection.innerHTML = `
-        <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
-        <h1 class="titulo-degradado">CLESA</h1>
-        <p class="subtitulo">Seleccione sus 2 Días de Descanso</p>
-        ${tituloExtra}
-        
-        <div style="max-width: 400px; margin: 0 auto;">
-            <p style="margin-bottom: 20px; color: #666;">Seleccione exactamente 2 días en los que NO tendrá acceso al sistema:</p>
-            
-            <div id="diasDescansoContainer" style="display: grid; gap: 10px;">
-                ${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(dia => `
-                    <div class="dia-option" onclick="toggleDia('${dia}')" style="
-                        padding: 15px;
-                        border: 2px solid #e2e8f0;
-                        border-radius: 12px;
-                        cursor: pointer;
-                        text-align: center;
-                        font-weight: 600;
-                        transition: all 0.3s ease;
-                        background: #f7fafc;
-                    " data-dia="${dia}">
-                        ${dia}
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div id="mensajeSeleccion" style="margin: 15px 0; color: #666; font-size: 14px; text-align: center;">
-                Seleccione 2 días
-            </div>
-            
-            <button class="btn" id="btnConfirmarDias" onclick="confirmarDiasDescanso()" disabled style="opacity: 0.5;">
-                Confirmar Días de Descanso
-            </button>
-            <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">
-                Cancelar
-            </button>
-        </div>
-    `;
-}
+   
 
-// === FUNCIÓN PARA TOGGLE DE DÍAS ===
-let diasSeleccionados = [];
 
-function toggleDia(dia) {
-    const diaElement = document.querySelector(`[data-dia="${dia}"]`);
-    
-    if (diasSeleccionados.includes(dia)) {
-        // Deseleccionar
-        diasSeleccionados = diasSeleccionados.filter(d => d !== dia);
-        diaElement.style.background = '#f7fafc';
-        diaElement.style.borderColor = '#e2e8f0';
-        diaElement.style.color = '#2d3748';
-    } else {
-        // Seleccionar (máximo 2)
-        if (diasSeleccionados.length >= 2) {
-            alert('Solo puede seleccionar 2 días de descanso');
-            return;
-        }
-        diasSeleccionados.push(dia);
-        diaElement.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-        diaElement.style.borderColor = '#667eea';
-        diaElement.style.color = 'white';
-    }
-    
-    // Actualizar mensaje y botón
-    const mensaje = document.getElementById('mensajeSeleccion');
-    const btnConfirmar = document.getElementById('btnConfirmarDias');
-    
-    if (diasSeleccionados.length === 2) {
-        mensaje.textContent = `Días seleccionados: ${diasSeleccionados.join(', ')}`;
-        mensaje.style.color = '#22c55e';
-        btnConfirmar.disabled = false;
-        btnConfirmar.style.opacity = '1';
-    } else {
-        mensaje.textContent = `Seleccione ${2 - diasSeleccionados.length} día(s) más`;
-        mensaje.style.color = '#666';
-        btnConfirmar.disabled = true;
-        btnConfirmar.style.opacity = '0.5';
-    }
-}
-
-// === FUNCIÓN PARA CONFIRMAR DÍAS DE DESCANSO ===
-async function confirmarDiasDescanso() {
-    if (diasSeleccionados.length !== 2) {
-        alert('Debe seleccionar exactamente 2 días');
-        return;
-    }
-    
-    try {
-        const ahora = new Date();
-        const diasString = diasSeleccionados.join(',');
-        
-        // Calcular fecha de expiración (2 días desde hoy)
-        const fechaFin = new Date();
-        fechaFin.setDate(fechaFin.getDate() + 2);
-        const fechaFinString = fechaFin.toISOString().split('T')[0];
-        
-        // Guardar en base de datos
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .update({
-                dias_descanso: diasString,
-                descanso_fecha_fin: fechaFinString
-            })
-            .eq('id', currentUser.id);
-        
-        if (error) {
-            console.error('Error guardando días de descanso:', error);
-            alert('Error al guardar los días. Intente nuevamente.');
-            return;
-        }
-        
-        console.log('✅ Días de descanso guardados:', diasString, 'hasta:', fechaFinString);
-        
-        // Actualizar currentUser
-        currentUser.dias_descanso = diasString;
-        currentUser.descanso_fecha_fin = fechaFinString;
-        
-        // Ir al menú principal
-        document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario}`;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('tableSelectionSection').style.display = 'block';
-        
-        mostrarTablasSegunRol();
-        iniciarVerificacionSesion();
-        guardarDatosOffline();
-        
-        // Resetear selección
-        diasSeleccionados = [];
-        
-    } catch (error) {
-        console.error('Error crítico guardando días:', error);
-        alert('Error de conexión.');
-    }
-}
 
 // === FUNCIÓN AUXILIAR: GUARDAR TURNO EN SESIÓN ===
 function guardarTurnoEnSesion(turnoKey) {
