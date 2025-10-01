@@ -677,7 +677,7 @@
 
 <script>
     // --- 1. DEFINICIÓN DE VARIABLES GLOBALES (Usar solo 'let', una vez) ---
-    const DIAS_SEMANA_NOMBRES = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+    const NOMBRES_DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let currentUser = null;
     let selectedTable = null;
     let consultasData = [];
@@ -853,85 +853,6 @@ function toggleDiaSeleccionado(event, dia) {
 
 
 
-async function seleccionarDiasDescanso() {
-    console.log('📝 Días de descanso seleccionados:', diasDescansoSeleccionados);
-    
-    // VALIDACIÓN CRÍTICA: Debe seleccionar 2 días
-    if (diasDescansoSeleccionados.length !== 2) {
-        alert('Debe seleccionar exactamente dos días de descanso.');
-        const btnConfirmar = document.getElementById('btnConfirmarDescanso');
-        btnConfirmar.disabled = false; // Re-habilitar si hay error
-        return;
-    }
-    
-    const userId = currentUser.id;
-    const btnConfirmar = document.getElementById('btnConfirmarDescanso');
-    btnConfirmar.disabled = true; // Deshabilitar para evitar doble envío
-
-    // Usamos los dos días seleccionados del array global
-    const [dia1, dia2] = diasDescansoSeleccionados; 
-    const diasConcatenados = `${dia1},${dia2}`; 
-    
-    // === LÓGICA DE CÁLCULO DE FECHA DE BLOQUEO ===
-    // Nota: Necesitas el array DIAS_SEMANA para calcular esto
-    // Si no tienes DIAS_SEMANA, usa DIAS_SEMANA_NOMBRES y obtén el índice (0=DOMINGO, 6=SÁBADO)
-    
-    // Mapear los nombres de días a números (0=DOMINGO, 1=LUNES... 6=SÁBADO)
-    const DIAS_NUMEROS = { 'DOMINGO': 0, 'LUNES': 1, 'MARTES': 2, 'MIÉRCOLES': 3, 'JUEVES': 4, 'VIERNES': 5, 'SÁBADO': 6 };
-    const diasNumeros = [DIAS_NUMEROS[dia1], DIAS_NUMEROS[dia2]];
-
-    const hoy = new Date();
-    const ultimoDiaSeleccionado = Math.max(...diasNumeros); 
-    
-    let diasParaFinDeBloqueo = (ultimoDiaSeleccionado - hoy.getDay() + 7) % 7;
-    // Ajuste para que el bloqueo sea hasta el día después de los dos días de descanso
-    diasParaFinDeBloqueo = diasParaFinDeBloqueo === 0 ? 7 : diasParaFinDeBloqueo; 
-    
-    const fechaFinBloqueo = new Date(hoy);
-    // +1 para que el ingreso permitido sea el día después de su último descanso
-    fechaFinBloqueo.setDate(hoy.getDate() + diasParaFinDeBloqueo + 1); 
-
-    // Formato de fecha para Supabase
-    const fechaFinStr = fechaFinBloqueo.toISOString().split('T')[0];
-    const fechaInicioStr = hoy.toISOString().split('T')[0];
-    // ===============================================
-
-    try {
-        // 1. Guardar días de descanso y fecha de fin en la base de datos
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .update({
-                dias_descanso: diasConcatenados, // Guardar como string 'LUNES,MARTES'
-                descanso_fecha_inicio: fechaInicioStr,
-                descanso_fecha_fin: fechaFinStr // Fecha en que termina el bloqueo
-            })
-            .eq('id', userId);
-
-        if (error) {
-            console.error('❌ Error guardando días de descanso en BD:', error);
-            alert('Error al guardar el descanso. Intente nuevamente.');
-            btnConfirmar.disabled = false;
-            return;
-        }
-
-        // 2. Actualizar usuario local
-        currentUser.dias_descanso = diasConcatenados;
-        currentUser.descanso_fecha_fin = fechaFinStr;
-        guardarDatosOffline();
-        
-        alert(`Sus días de descanso han sido asignados: ${dia1} y ${dia2}. Podrá ingresar nuevamente a partir del ${fechaFinStr}.`);
-
-        // Bloqueo y cierre de sesión inmediatamente
-        logout();
-
-    } catch (error) {
-        console.error('Error crítico guardando descanso:', error);
-        alert('Error de conexión.');
-        btnConfirmar.disabled = false;
-    }
-}
-
-
 // === FUNCIÓN AUXILIAR PARA ESCONDER TODAS LAS SECCIONES ===
 function esconderTodasLasSecciones() {
     const sections = [
@@ -1040,7 +961,7 @@ async function login() {
                 
                 if (hoy <= fechaFin) {
                     const diasDescanso = data.dias_descanso.split(',');
-                    const diaActualNombre = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'][new Date().getDay()];
+                    const diaActualNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
                     
                     if (diasDescanso.includes(diaActualNombre)) {
                         alert(`Hoy es ${diaActualNombre}, uno de sus días de descanso. No tiene acceso al sistema.`);
@@ -3298,4 +3219,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
