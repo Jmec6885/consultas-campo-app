@@ -755,7 +755,7 @@ function verificarHorarioPermitido(rol) {
     
     // 3. Consulta, Poda y Lectura (Horario restringido 5 AM - 8 PM)
     if (rol === 'Consulta' || rol === 'Poda' || rol === 'Lectura') {
-        if (horaActual >= 5 && horaActual < 20) {
+        if (horaActual >= 5 && horaActual < 23) {
             return { permitido: true, mensaje: '' };
         }
         return { permitido: false, mensaje: 'Acceso solo permitido de 5:00 AM a 8:00 PM.' };
@@ -3298,3 +3298,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
