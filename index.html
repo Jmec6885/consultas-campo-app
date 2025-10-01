@@ -692,49 +692,45 @@ const TURNOS_ATTF = {
 };
 
 
-// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
+// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO (CORREGIDA Y UNIFICADA) ===
 function verificarHorarioPermitido(rol) {
     const ahora = new Date();
     const horaActual = ahora.getHours();
     
+    // 1. Supervisor (Acceso libre)
     if (rol === 'Supervisor') {
-        return { permitido: true };
+        return { permitido: true, mensaje: '' };
     } 
     
+    // 2. Contratista (Día laboral y horario restringido)
     if (rol === 'Contratista') {
         if (!esDiaLaboral()) {
             return { permitido: false, mensaje: 'El rol Contratista solo tiene acceso de Lunes a Sábado.' };
         }
-        if (horaActual >= 5 && horaActual < 20) {
-            return { permitido: true };
+        if (horaActual >= 5 && horaActual < 20) { // 5:00 AM a 7:59 PM
+            return { permitido: true, mensaje: '' };
         }
         return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
     }
     
-    if (rol === 'Consulta' || rol === 'Poda') {
-        if (horaActual >= 5 && horaActual < 20) { // 5:00 a 19:59
+    // 3. Consulta y Poda (Horario restringido, lógica de turnos maneja ATTF/Poda después)
+    if (rol === 'Consulta' || rol === 'Poda' || rol === 'Lectura') {
+        if (horaActual >= 5 && horaActual < 20) { // 5:00 AM a 7:59 PM
             return { permitido: true, mensaje: '' };
         }
         return { permitido: false, mensaje: 'Acceso solo permitido de 5:00 AM a 8:00 PM.' };
     }
-    // ... (Tu lógica existente para otros roles) ...
-
-    return { permitido: true, mensaje: '' };
-}
-
-    if (rol === 'Lectura' || rol === 'Consulta') {
-        if (horaActual >= 5 && horaActual < 20) {
-            return { permitido: true };
-        }
-        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
-    }
     
+    // 4. ATTF (Debe verificar si está en un rango de gracia de algún turno)
     if (rol === 'ATTF') {
         return verificarTurnoATTFActivo(horaActual);
     }
     
-    return { permitido: true };
+    // 5. Caso por defecto (Si el rol no está restringido)
+    return { permitido: true, mensaje: '' };
 }
+
+
 
 // === FUNCIÓN AUXILIAR PARA VERIFICAR DÍA LABORAL ===
 function esDiaLaboral() {
@@ -1627,7 +1623,7 @@ function programarCierreSesion(turno) {
       function mostrarTablasSegunRol() {
     if (!currentUser || !currentUser.rol) {
         console.log('❌ currentUser no está disponible');
-        return;
+        return; // ✅ Legal, dentro de la función
     }
     
     const tableOptions = document.querySelectorAll('.table-option');
@@ -3011,3 +3007,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
