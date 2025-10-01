@@ -1126,7 +1126,7 @@ async function login() {
             
             // No tiene días o ya expiraron
             console.log('👷 Usuario Poda - Bloqueo expirado. Mostrando selección de descanso.');
-            mostrarSeleccionDescanso;
+            mostrarSeleccionDescanso();
             return;
         }
 
@@ -1665,7 +1665,7 @@ function mostrarSeleccionTurno() {
 }
 
 // === FUNCIÓN PARA MOSTRAR SELECCIÓN DE DÍAS DE DESCANSO ===
-function mostrarSeleccionDescanso {
+function mostrarSeleccionDescanso () {
     const loginSection = document.getElementById('loginSection');
     
     // Si ya tiene turno asignado (para ATTF), mostrarlo en el título
