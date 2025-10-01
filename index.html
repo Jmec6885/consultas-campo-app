@@ -990,7 +990,8 @@ async function login() {
          currentUser = { ...data, session_token: sessionToken };
 
         
-        // === MANEJO DE ROL ATTF ===
+       
+// === MANEJO DE ROL ATTF ===
 if (data.rol === 'ATTF') {
     const fechaHoy = new Date().toISOString().split('T')[0];
 
@@ -1039,7 +1040,6 @@ if (data.rol === 'ATTF') {
         return;
     }
 }
-
         // === MANEJO DE ROL PODA ===
         if (data.rol === 'Poda') {
             const fechaHoy = new Date().toISOString().split('T')[0];
