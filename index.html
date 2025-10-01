@@ -711,19 +711,6 @@ function verificarHorarioPermitido(rol) {
         }
         return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
     }
-
-    if (rol === 'Poda') {
-    const diasDescanso = await supabaseClient
-        .from('dias_descanso')
-        .select('dia')
-        .eq('usuario_id', currentUser.id);
-
-    const hoy = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
-    if (diasDescanso.data.includes(hoy)) {
-        return { permitido: false, mensaje: 'Hoy es un día de descanso. Acceso denegado.' };
-    }
-    return { permitido: true };
-}
     
     if (rol === 'Lectura' || rol === 'Consulta') {
         if (horaActual >= 5 && horaActual < 20) {
@@ -786,26 +773,6 @@ async function limpiarTurnosViejos() {
     } catch (error) {
         console.error('Error en limpieza de turnos:', error);
     }
-}
-
-function mostrarSeleccionDiasDescanso() {
-    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    let html = '<h3>Seleccione sus días de descanso:</h3><div>';
-    dias.forEach((dia, index) => {
-        html += `<button onclick="seleccionarDia(${index})">${dia}</button>`;
-    });
-    html += '</div>';
-    document.getElementById('searchResults').innerHTML = html;
-}
-
-function seleccionarDia(dia) {
-    supabaseClient
-        .from('dias_descanso')
-        .insert([{ usuario_id: currentUser.id, dia }])
-        .then(() => {
-            alert('Días de descanso guardados exitosamente.');
-            // Redirigir al menú principal o a la siguiente acción
-        });
 }
 
 async function login() {
@@ -904,11 +871,6 @@ async function login() {
             mostrarSeleccionTurno();
             return;
         }
-
-	if (data.rol === 'Poda') {
-    mostrarSeleccionDiasDescanso();
-    return; // Prevenir que continúe al menú principal hasta que seleccione días
-}
 
         // Para otros roles: continuar normal
         document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
