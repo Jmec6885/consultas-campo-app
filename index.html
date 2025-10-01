@@ -990,41 +990,39 @@ async function login() {
          currentUser = { ...data, session_token: sessionToken };
 
         
-       
 // === MANEJO DE ROL ATTF ===
 if (data.rol === 'ATTF') {
     const fechaHoy = new Date().toISOString().split('T')[0];
 
-    // === 1. Primero: verificar si ya tiene turno HOY ===
+    // 1) Si YA tiene turno hoy → mostrar menú directamente
     if (data.turno_fecha === fechaHoy && data.turno_actual) {
-        // Tiene turno → continuar
-        currentUser.turnoAsignado = data.turno_actual;
-        currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
-        currentUser.turno_fecha = data.turno_fecha;
-        currentUser.dias_descanso = data.dias_descanso;
+        currentUser.turnoAsignado   = data.turno_actual;
+        currentUser.turnoNombre     = TURNOS_ATTF[data.turno_actual].nombre;
+        currentUser.turno_fecha     = data.turno_fecha;
+        currentUser.dias_descanso   = data.dias_descanso;
         currentUser.descanso_fecha_fin = data.descanso_fecha_fin;
 
-        // === 2. Verificar días de descanso ===
-        if (!data.dias_descanso || !data.descanso_fecha_fin || new Date(data.descanso_fecha_fin) < new Date(fechaHoy)) {
-            console.log('🔄 Días de descanso expirados o no asignados. Mostrando selección.');
-            mostrarSeleccionDescanso();
-            return;
+        // 1.a) ¿Hoy es su día de descanso? → bloquear
+        if (data.dias_descanso && data.descanso_fecha_fin) {
+            const fechaFin = new Date(data.descanso_fecha_fin);
+            const hoy      = new Date(fechaHoy);
+            if (hoy <= fechaFin) {
+                const diasDescanso = data.dias_descanso.split(',');
+                const diaActualNombre = NOMBRES_DIAS[new Date().getDay()];
+                if (diasDescanso.includes(diaActualNombre)) {
+                    alert(`Hoy es ${diaActualNombre}, su día de descanso. No tiene acceso.`);
+                    await supabaseClient
+                        .from('usuarios')
+                        .update({ sessionactiva: false, sessiontoken: null })
+                        .eq('id', data.id);
+                    return;
+                }
+            }
         }
 
-        // === 3. Validar si hoy es día de descanso ===
-        const diasDescanso = data.dias_descanso.split(',');
-        const diaActualNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
-        if (diasDescanso.includes(diaActualNombre)) {
-            alert(`Hoy es ${diaActualNombre}, uno de sus días de descanso. No tiene acceso al sistema.`);
-            await supabaseClient
-                .from('usuarios')
-                .update({ sessionactiva: false, sessiontoken: null })
-                .eq('id', data.id);
-            return;
-        }
-
-        // === 4. Todo OK → ir al menú ===
-        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+        // 1.b) Todo OK → entrar al menú
+        document.getElementById('currentUser').textContent =
+            `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
         document.getElementById('userInfo').classList.remove('hidden');
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('tableSelectionSection').style.display = 'block';
@@ -1033,13 +1031,15 @@ if (data.rol === 'ATTF') {
         guardarDatosOffline();
         setInterval(verificarCorteTurno, 5 * 60 * 1000);
         return;
-    } else {
-        // === No tiene turno → mostrar selección de turno ===
-        console.log('👷 Usuario ATTF - Mostrando selección de turno');
-        mostrarSeleccionTurno();
-        return;
     }
+
+    // 2) No tiene turno hoy → mostrar selección de turno
+    console.log('👷 Usuario ATTF - Sin turno asignado hoy. Mostrando selección de turno.');
+    mostrarSeleccionTurno();
+    return;
 }
+
+
         // === MANEJO DE ROL PODA ===
         if (data.rol === 'Poda') {
             const fechaHoy = new Date().toISOString().split('T')[0];
