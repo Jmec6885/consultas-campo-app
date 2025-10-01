@@ -681,6 +681,7 @@
     let currentUser = null;
     let selectedTable = null;
     let consultasData = [];
+    let diasDescansoSeleccionados = []; // <--- ¡NUEVA VARIABLE GLOBAL!
 
     // --- 2. CONFIGURACIÓN E INICIALIZACIÓN DE SUPABASE ---
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
@@ -819,47 +820,103 @@ async function limpiarTurnosViejos() {
     }
 }
 
-async function seleccionarDiasDescanso(dia1, dia2) {
-    const diasSeleccionados = `${dia1},${dia2}`;
-    const diasNumeros = [DIAS_SEMANA[dia1], DIAS_SEMANA[dia2]];
+
+
+// Función auxiliar para seleccionar/deseleccionar un día
+function toggleDiaSeleccionado(event, dia) {
+    const button = event.target;
     
-    // 1. Calcular la fecha de finalización (el día después del último día de descanso)
+    // 1. Lógica de SELECCIÓN (Si no está seleccionado y ya tenemos 2)
+    if (!button.classList.contains('selected') && diasDescansoSeleccionados.length >= 2) {
+        alert('Solo puede seleccionar un máximo de dos días de descanso.');
+        return; // Detiene la función, no permite seleccionar el tercer día.
+    }
+
+    // 2. Alternar la clase CSS para que se vea seleccionado
+    button.classList.toggle('selected');
+    
+    // 3. Actualizar el array global
+    if (button.classList.contains('selected')) {
+        // Añadir el día
+        diasDescansoSeleccionados.push(dia);
+    } else {
+        // Remover el día
+        diasDescansoSeleccionados = diasDescansoSeleccionados.filter(d => d !== dia);
+    }
+
+    // 4. Habilitar/Deshabilitar el botón de Confirmar
+    const btnConfirmar = document.getElementById('btnConfirmarDescanso');
+    // Habilitar solo si hay exactamente 2 días seleccionados
+    btnConfirmar.disabled = diasDescansoSeleccionados.length !== 2; 
+    
+    console.log('Días seleccionados:', diasDescansoSeleccionados);
+}
+
+
+
+async function seleccionarDiasDescanso() {
+    console.log('📝 Días de descanso seleccionados:', diasDescansoSeleccionados);
+    
+    // VALIDACIÓN CRÍTICA: Debe seleccionar 2 días
+    if (diasDescansoSeleccionados.length !== 2) {
+        alert('Debe seleccionar exactamente dos días de descanso.');
+        const btnConfirmar = document.getElementById('btnConfirmarDescanso');
+        btnConfirmar.disabled = false; // Re-habilitar si hay error
+        return;
+    }
+    
+    const userId = currentUser.id;
+    const btnConfirmar = document.getElementById('btnConfirmarDescanso');
+    btnConfirmar.disabled = true; // Deshabilitar para evitar doble envío
+
+    // Usamos los dos días seleccionados del array global
+    const [dia1, dia2] = diasDescansoSeleccionados; 
+    const diasConcatenados = `${dia1},${dia2}`; 
+    
+    // === LÓGICA DE CÁLCULO DE FECHA DE BLOQUEO ===
+    // Nota: Necesitas el array DIAS_SEMANA para calcular esto
+    // Si no tienes DIAS_SEMANA, usa DIAS_SEMANA_NOMBRES y obtén el índice (0=DOMINGO, 6=SÁBADO)
+    
+    // Mapear los nombres de días a números (0=DOMINGO, 1=LUNES... 6=SÁBADO)
+    const DIAS_NUMEROS = { 'DOMINGO': 0, 'LUNES': 1, 'MARTES': 2, 'MIÉRCOLES': 3, 'JUEVES': 4, 'VIERNES': 5, 'SÁBADO': 6 };
+    const diasNumeros = [DIAS_NUMEROS[dia1], DIAS_NUMEROS[dia2]];
+
     const hoy = new Date();
-    // Encuentra el día de la semana (0=Domingo, 6=Sábado) de la segunda fecha de descanso
     const ultimoDiaSeleccionado = Math.max(...diasNumeros); 
     
-    // Calcula cuántos días faltan para el día después del último día de descanso (mod 7)
-    // El bloqueo debe durar hasta que el usuario termine la semana.
     let diasParaFinDeBloqueo = (ultimoDiaSeleccionado - hoy.getDay() + 7) % 7;
-    // Añadir 1 día más para que el usuario pueda ingresar el día después de su descanso
+    // Ajuste para que el bloqueo sea hasta el día después de los dos días de descanso
     diasParaFinDeBloqueo = diasParaFinDeBloqueo === 0 ? 7 : diasParaFinDeBloqueo; 
     
     const fechaFinBloqueo = new Date(hoy);
-    fechaFinBloqueo.setDate(hoy.getDate() + diasParaFinDeBloqueo + 1); // +1 para que sea la fecha de ingreso permitido
+    // +1 para que el ingreso permitido sea el día después de su último descanso
+    fechaFinBloqueo.setDate(hoy.getDate() + diasParaFinDeBloqueo + 1); 
 
     // Formato de fecha para Supabase
     const fechaFinStr = fechaFinBloqueo.toISOString().split('T')[0];
     const fechaInicioStr = hoy.toISOString().split('T')[0];
+    // ===============================================
 
     try {
-        // 2. Guardar días de descanso y fecha de fin en la base de datos
+        // 1. Guardar días de descanso y fecha de fin en la base de datos
         const { error } = await supabaseClient
             .from('usuarios')
             .update({
-                dias_descanso: diasSeleccionados,
+                dias_descanso: diasConcatenados, // Guardar como string 'LUNES,MARTES'
                 descanso_fecha_inicio: fechaInicioStr,
                 descanso_fecha_fin: fechaFinStr // Fecha en que termina el bloqueo
             })
-            .eq('id', currentUser.id);
+            .eq('id', userId);
 
         if (error) {
-            console.error('Error guardando días de descanso en BD:', error);
+            console.error('❌ Error guardando días de descanso en BD:', error);
             alert('Error al guardar el descanso. Intente nuevamente.');
+            btnConfirmar.disabled = false;
             return;
         }
 
-        // 3. Actualizar usuario local y UI
-        currentUser.dias_descanso = diasSeleccionados;
+        // 2. Actualizar usuario local
+        currentUser.dias_descanso = diasConcatenados;
         currentUser.descanso_fecha_fin = fechaFinStr;
         guardarDatosOffline();
         
@@ -871,6 +928,7 @@ async function seleccionarDiasDescanso(dia1, dia2) {
     } catch (error) {
         console.error('Error crítico guardando descanso:', error);
         alert('Error de conexión.');
+        btnConfirmar.disabled = false;
     }
 }
 
@@ -899,52 +957,39 @@ function esconderTodasLasSecciones() {
 function mostrarSeleccionDescanso() {
     console.log('🔄 Activando pantalla de Selección de Descanso'); 
     
-    // 0. Limpiar TODAS las secciones antes de mostrar solo una.
+    // 0. Preparación
     esconderTodasLasSecciones(); 
 
     const descansoSection = document.getElementById('seleccionDescansoSection');
     const container = document.getElementById('diasDescansoContainer');
     const btnConfirmar = document.getElementById('btnConfirmarDescanso');
     
-    // Resetear variables y estado
-    let diasSeleccionados = [];
-    btnConfirmar.disabled = true;
-    container.innerHTML = ''; // Limpiar botones anteriores
+    // Resetear el estado para la nueva selección
+    diasDescansoSeleccionados = [];
+    if (btnConfirmar) btnConfirmar.disabled = true;
+    if (container) container.innerHTML = ''; // LIMPIAR: ¡Esta línea es vital para evitar la pantalla en blanco!
 
-    // 1. Mostrar la sección de descanso
+    // 1. Mostrar la sección
     if (descansoSection) {
         descansoSection.classList.remove('hidden'); 
-        descansoSection.style.display = 'block';   
     }
     
-    // 2. Generar los botones de los días (LUNES a DOMINGO)
-    DIAS_SEMANA_NOMBRES.slice(1).forEach(dia => { // Empezamos desde el LUNES
+    // 2. GENERACIÓN DE BOTONES
+    // Usamos .slice(1) para omitir 'DOMINGO' (si no quieres que sea seleccionable)
+    // Si quieres incluir el DOMINGO, usa solo DIAS_SEMANA_NOMBRES.forEach(...)
+    DIAS_SEMANA_NOMBRES.slice(1).forEach(dia => { 
         const button = document.createElement('button');
         button.textContent = dia;
-        button.className = 'btn btn-day-selector'; // Asegúrate de definir este estilo en tu CSS
-        button.onclick = function() {
-            if (diasSeleccionados.includes(dia)) {
-                // Deseleccionar
-                diasSeleccionados = diasSeleccionados.filter(d => d !== dia);
-                button.classList.remove('selected');
-            } else if (diasSeleccionados.length < 2) {
-                // Seleccionar
-                diasSeleccionados.push(dia);
-                button.classList.add('selected');
-            }
-            // Habilitar/Deshabilitar el botón de confirmar
-            btnConfirmar.disabled = diasSeleccionados.length !== 2;
-        };
-        container.appendChild(button);
+        button.className = 'btn btn-day-selector'; 
+        button.type = 'button'; 
+        
+        // Conectar con la función de click
+        button.onclick = (e) => toggleDiaSeleccionado(e, dia);
+        
+        container.appendChild(button); // Insertar el botón en el contenedor
     });
-    
-    // 3. Conectar el botón de confirmar al evento
-    btnConfirmar.onclick = () => {
-        if (diasSeleccionados.length === 2) {
-            seleccionarDiasDescanso(diasSeleccionados[0], diasSeleccionados[1]);
-        }
-    };
 }
+
 
 async function login() {
     console.log('🔐 Ejecutando login...');
@@ -3107,3 +3152,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
