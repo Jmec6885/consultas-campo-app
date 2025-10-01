@@ -11,551 +11,515 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2 "></script>
     <style>
-    /* Variables de color para toda la aplicación */
-    :root {
-        --color-azul: #3b54d3;
-        --color-verde: #3ac99c;
-        --color-fondo: #f0f5f9;
-        --color-error: #d32f2f;
-        --color-success: #2e7d32;
-        --color-naranja: #ff6b35;
-        --color-purpura: #8b5cf6;
-    }
-
-    /* Estilos globales y de fondo */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    html {
-        font-size: 16px;
-        height: 100%;
-    }
-
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, var(--color-fondo) 0%, #e3f2fd 100%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 20px;
-        position: relative;
-    }
-
-    body::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(circle at 20% 80%, rgba(59, 84, 211, 0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 20%, rgba(58, 201, 156, 0.1) 0%, transparent 50%);
-        z-index: -1;
-    }
-
-    /* Contenedores y Tarjetas */
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-        width: 100%;
-    }
-
-    .card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-        padding: 40px;
-        margin-bottom: 20px;
-        width: 100%;
-        position: relative;
-        overflow: hidden;
-        text-align: center;
-        animation: slideIn 0.6s ease-out;
-    }
-
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
-    }
-
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
+        /* Variables de color para toda la aplicación */
+        :root {
+            --color-azul: #3b54d3;
+            --color-verde: #3ac99c;
+            --color-fondo: #f0f5f9;
+            --color-error: #d32f2f;
+            --color-success: #2e7d32;
+            --color-naranja: #ff6b35;
+            --color-purpura: #8b5cf6;
         }
-        to {
-            opacity: 1;
+
+        /* Estilos globales y de fondo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--color-fondo) 0%, #e3f2fd 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(59, 84, 211, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(58, 201, 156, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        /* Contenedores y Tarjetas */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-bottom: 20px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Estilos del logo y títulos */
+        .logo {
+            height: 70px;
+            width: auto;
+            max-width: 100%;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        
+        .titulo-degradado {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            user-select: none;
+            margin-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .subtitulo {
+            color: #666;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        /* Formulario y botones */
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--color-azul);
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 84, 211, 0.1);
+        }
+
+        input::placeholder {
+            color: #999;
+            font-weight: 500;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--color-azul), var(--color-verde));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 84, 211, 0.3);
+        }
+
+        .btn:active {
             transform: translateY(0);
         }
-    }
 
-    /* Estilos del logo y títulos */
-    .logo {
-        height: 70px;
-        width: auto;
-        max-width: 100%;
-        margin-bottom: 20px;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-    }
-    
-    .titulo-degradado {
-        font-size: 2.5rem;
-        font-weight: 900;
-        background: linear-gradient(90deg, var(--color-azul), var(--color-verde));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        user-select: none;
-        margin-bottom: 10px;
-        margin-top: 0;
-    }
-
-    .subtitulo {
-        color: #666;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 30px;
-    }
-
-    /* Formulario y botones */
-    .login-form {
-        max-width: 400px;
-        margin: 0 auto;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-        text-align: left;
-    }
-
-    label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 600;
-        color: #4a5568;
-    }
-
-    input[type="text"], input[type="password"], select {
-        width: 100%;
-        padding: 15px 20px;
-        border: 2px solid #e1e5e9;
-        border-radius: 12px;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        background: #f8f9fa;
-    }
-
-    input:focus, select:focus {
-        border-color: var(--color-azul);
-        outline: none;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(59, 84, 211, 0.1);
-    }
-
-    input::placeholder {
-        color: #999;
-        font-weight: 500;
-    }
-
-    .btn {
-        background: linear-gradient(135deg, var(--color-azul), var(--color-verde));
-        color: white;
-        border: none;
-        padding: 15px 30px;
-        border-radius: 12px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 700;
-        width: 100%;
-        margin-top: 10px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(59, 84, 211, 0.3);
-    }
-
-    .btn:active {
-        transform: translateY(0);
-    }
-
-    .btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #4299e1, #2b6cb0);
-        width: auto;
-        min-width: 120px;
-        padding: 12px 24px;
-    }
-    
-    .btn-danger {
-        background: linear-gradient(135deg, #e53e3e, #c53030);
-        width: auto;
-        padding: 8px 16px;
-        margin-left: 10px;
-    }
-
-    .btn-back {
-        background: linear-gradient(135deg, var(--color-naranja), #e55a2b);
-        width: auto;
-        padding: 10px 20px;
-        margin-bottom: 20px;
-    }
-
-    /* ESTILOS PARA LOS BOTONES DE SELECCIÓN DE DÍA DE DESCANSO */
-    .btn-day-selector {
-        background: #e2e8f0;
-        color: #2d3748;
-        border: 2px solid #cbd5e0;
-        padding: 10px 15px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        margin: 5px; /* Añadir margen para separarlos */
-        width: 100%; /* Ocupar todo el ancho en el grid */
-    }
-
-    .btn-day-selector:hover {
-        background: #cfd8e3;
-    }
-
-    .btn-day-selector.selected {
-        background: var(--color-verde);
-        color: white;
-        border-color: var(--color-verde);
-        box-shadow: 0 4px 10px rgba(58, 201, 156, 0.4);
-    }
-
-    /* Selector de tablas (usado también para días de descanso) */
-    .table-selector {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Optimizado para 7 días */
-        gap: 10px; /* Reducido el gap para que quepan */
-        margin-top: 20px;
-    }
-    
-    /* Mantener el diseño de tarjeta para las opciones de módulos */
-    .table-option {
-        background: linear-gradient(135deg, #f7fafc, #edf2f7);
-        border: 3px solid #e2e8f0;
-        border-radius: 15px;
-        padding: 25px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-
-    .table-option:hover {
-        border-color: var(--color-azul);
-        background: linear-gradient(135deg, #ebf8ff, #bee3f8);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(59, 84, 211, 0.15);
-    }
-
-    .table-option.selected {
-        border-color: var(--color-verde);
-        background: linear-gradient(135deg, #f0fff4, #c6f6d5);
-    }
-
-    .table-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        display: block;
-    }
-
-    .table-title {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 8px;
-    }
-
-    .table-description {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    /* Secciones de la app */
-    /* La clase 'hidden' debería controlar la visibilidad */
-    .table-selection-section, .search-section, .admin-section {
-         /* Quitamos el display: none aquí y confiamos en la clase .hidden */
-    }
-
-    .search-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .result-card {
-        background: #f7fafc;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
-        text-align: left;
-    }
-    
-    .result-header {
-        font-size: 18px;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 15px;
-    }
-
-    .result-item {
-        margin-bottom: 10px;
-        padding: 5px 0;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .result-label {
-        font-weight: 600;
-        color: #4a5568;
-    }
-    
-    .action-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .footer {
-        margin-top: 30px;
-        font-weight: 600;
-        color: #666;
-        font-size: 14px;
-        text-align: center;
-    }
-    
-    /* Loading spinner y mensajes */
-    .loading {
-        display: none;
-        width: 24px;
-        height: 24px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top: 3px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .hidden {
-        display: none !important;
-    }
-
-    .user-info {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255,255,255,0.9);
-        padding: 10px 15px;
-        border-radius: 8px;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    /* Modal para gráficas */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        padding: 20px;
-    }
-    
-    .modal-content {
-        background-color: white;
-        margin: 2% auto;
-        padding: 20px;
-        border-radius: 15px;
-        width: 90%;
-        max-width: 1000px;
-        max-height: 90%;
-        overflow-y: auto;
-    }
-
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-    
-    .close:hover {
-        color: #000;
-    }
-    
-    .charts-container {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 30px;
-        margin-top: 20px;
-    }
-    
-    .chart-card {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 20px;
-    }
-    
-    .chart-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    
-    .chart-container {
-        position: relative;
-        height: 400px;
-    }
-    
-    /* Media Query para móviles (Corregido) */
-    @media (max-width: 768px) {
-        /* Reducir padding del body y container */
-        body {
-            padding: 10px;
+        .btn-secondary {
+            background: linear-gradient(135deg, #4299e1, #2b6cb0);
+            width: auto;
+            min-width: 120px;
+            padding: 12px 24px;
         }
         
-        .container {
-            max-width: 100%;
-            padding: 5px;
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            width: auto;
+            padding: 8px 16px;
+            margin-left: 10px;
         }
-        
-        /* Hacer las tarjetas más anchas y con menos padding */
-        .card {
-            padding: 20px 15px;
-            margin-bottom: 15px;
-            border-radius: 15px;
+
+        .btn-back {
+            background: linear-gradient(135deg, var(--color-naranja), #e55a2b);
+            width: auto;
+            padding: 10px 20px;
+            margin-bottom: 20px;
         }
-        
-        /* Ajustar cuadros de resultados */
-        .result-card {
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 10px;
-        }
-        
-        /* Mejorar el espacio de los elementos de resultado */
-        .result-item {
-            margin-bottom: 15px;
-            padding: 8px 0;
-            border-bottom: 2px solid #e2e8f0;
-            line-height: 1.6;
-        }
-        
-        .result-item strong {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #2d3748;
-        }
-        
-        /* Ajustes para otros elementos */
-        .search-grid {
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
+
+        /* Selector de tablas */
         .table-selector {
-            grid-template-columns: 1fr;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
-        .action-buttons {
-            flex-direction: column;
-            gap: 8px;
+
+        .table-option {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            border: 3px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
         }
-        .btn-secondary, .btn-danger {
-            width: 100%;
-            margin: 0 !important;
-            font-size: 14px !important;
-            padding: 10px 15px !important;
+
+        .table-option:hover {
+            border-color: var(--color-azul);
+            background: linear-gradient(135deg, #ebf8ff, #bee3f8);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(59, 84, 211, 0.15);
         }
-        .modal-content {
-            width: 95%;
-            margin: 5% auto;
-            padding: 15px;
+
+        .table-option.selected {
+            border-color: var(--color-verde);
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
         }
-        .chart-container {
-            height: 300px;
-        }
-        .user-info {
-            position: relative;
-            top: auto;
-            right: auto;
+
+        .table-icon {
+            font-size: 3rem;
             margin-bottom: 15px;
-            justify-content: center;
+            display: block;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .table-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Secciones de la app */
+        .table-selection-section, .search-section, .admin-section {
+            display: none;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
         }
         
-        /* Hacer los títulos más pequeños en móvil */
-        .titulo-degradado {
-            font-size: 2rem;
+        .result-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
         
-        /* Mejorar legibilidad de enlaces */
-        .result-item a {
-            display: inline-block;
-            margin: 5px 0;
-            padding: 8px 12px;
-            background: #f0f9ff;
+        .result-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Loading spinner y mensajes */
+        .loading {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
             border-radius: 8px;
-            border: 1px solid #3b54d3;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-    } 
-    /* Estilos globales para botones de seguridad que se aplicaron incorrectamente */
-    .btn-secondary {
-        font-size: 14px;
-        padding: 10px 15px;
+
+        /* Modal para gráficas */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .chart-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        
+       @media (max-width: 768px) {
+    /* Reducir padding del body y container */
+    body {
+        padding: 10px;
     }
+    
+    .container {
+        max-width: 100%;
+        padding: 5px;
+    }
+    
+    /* Hacer las tarjetas más anchas y con menos padding */
+    .card {
+        padding: 20px 15px;
+        margin-bottom: 15px;
+        border-radius: 15px;
+    }
+    
+    /* Ajustar cuadros de resultados */
+    .result-card {
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 10px;
+    }
+    
+    /* Mejorar el espacio de los elementos de resultado */
+    .result-item {
+        margin-bottom: 15px;
+        padding: 8px 0;
+        border-bottom: 2px solid #e2e8f0;
+        line-height: 1.6;
+    }
+    
+    .result-item strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #2d3748;
+    }
+    
+    /* Ajustes para otros elementos */
+    .search-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    .table-selector {
+        grid-template-columns: 1fr;
+    }
+    .action-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .btn-secondary, .btn-danger {
+        width: 100%;
+        margin: 0;
+        font-size: 14px !important;
+        padding: 10px 15px !important;
+    }
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        padding: 15px;
+    }
+    .chart-container {
+        height: 300px;
+    }
+    .user-info {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 15px;
+        justify-content: center;
+    }
+    
+    /* Hacer los títulos más pequeños en móvil */
+    .titulo-degradado {
+        font-size: 2rem;
+    }
+    
+    /* Mejorar legibilidad de enlaces */
+    .result-item a {
+        display: inline-block;
+        margin: 5px 0;
+        padding: 8px 12px;
+        background: #f0f9ff;
+        border-radius: 8px;
+        border: 1px solid #3b54d3;
+    } /* ← Esta llave faltaba */
+} /* ← Est
+.btn-secondary {
+    font-size: 14px !important;
+    padding: 10px 15px !important;
+}
+}
 
 
 
-
-        </style>
+    </style>
 </head>
 <body>
     <div class="container">
-        
         <div class="user-info hidden" id="userInfo">
             <span id="currentUser"></span>
             <button class="btn btn-danger" onclick="logout()">Salir</button>
         </div>
 
+        <!-- Sección de Login -->
         <div class="card" id="loginSection">
             <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png " alt="Logo CLESA" class="logo">
             <h1 class="titulo-degradado">CLESA</h1>
@@ -566,6 +530,7 @@
                     <label for="username">Usuario:</label>
                     <input type="text" id="username" placeholder="Ingrese su usuario" value="admin">
                     <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                      
                     </small>
                 </div>
                 <div class="form-group">
@@ -577,18 +542,8 @@
             <p class="footer">By. Jose Meneses</p>
         </div>
 
-        <div class="card hidden" id="seleccionDescansoSection">
-            <h2 class="titulo-degradado">Selección de Días de Descanso</h2>
-            <p class="subtitulo">Por favor, elija sus dos días libres (Lun-Dom) para las próximas semanas.</p>
-            
-            <div class="table-selector" id="diasDescansoContainer">
-                </div>
-            
-            <button class="btn" id="btnConfirmarDescanso" style="width: 100%; margin-top: 20px;" disabled>Confirmar Descanso</button>
-            <button class="btn btn-back" onclick="logout()" style="width: 100%; margin-top: 10px;">Cancelar y Salir</button>
-        </div>
-        
-        <div class="table-selection-section hidden" id="tableSelectionSection">
+        <!-- Sección de Selección de Tablas -->
+        <div class="table-selection-section" id="tableSelectionSection">
             <div class="card">
                 <h2>Seleccione el Módulo de Consulta</h2>
                 <p class="subtitulo">Elija el tipo de información que desea consultar</p>
@@ -599,7 +554,7 @@
                         <div class="table-title">Consultas de Servicios</div>
                         <div class="table-description">Información general de servicios y clientes</div>
                     </div>
-                                            
+                                        
                     <div class="table-option" onclick="seleccionarTabla('OS Pendientes')">
                         <span class="table-icon">⏳</span>
                         <div class="table-title">OS Pendientes</div>
@@ -621,19 +576,22 @@
             </div>
         </div>
 
-        <div class="search-section hidden" id="searchSection">
+        <!-- Sección de Búsqueda -->
+        <div class="search-section" id="searchSection">
             <div class="card">
                 <button class="btn btn-back" onclick="volverATablas()">← Volver a Módulos</button>
                 <div class="header">
                     <h2 id="searchTitle">Consultar Información</h2>
                 </div>
                 <div class="search-grid" id="searchGrid">
+                    <!-- Se genera dinámicamente según la tabla seleccionada -->
                 </div>
                 <div id="searchResults"></div>
             </div>
         </div>
 
-        <div class="admin-section hidden" id="adminSection">
+        <!-- Panel de Administración -->
+        <div class="admin-section" id="adminSection">
             <div class="card">
                 <button class="btn btn-back" onclick="volverATablas()">← Volver a Módulos</button>
                 <div class="header">
@@ -647,12 +605,15 @@
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="procesarArchivos()">📊 Procesar Archivos</button>
                     <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Datos</button>
+
+
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="chartsModal" class="modal hidden">
+    <!-- Modal para gráficas -->
+    <div id="chartsModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarGraficas()">×</span>
             <h2 id="modalTitle">Gráficas de Consumo y Lecturas</h2>
@@ -667,6 +628,8 @@
                     <div class="chart-title">📈 Historial de Lecturas</div>
                     <div class="chart-container">
                         <canvas id="lecturasChart"></canvas>
+
+
                     </div>
                 </div>
             </div>
@@ -677,11 +640,9 @@
 
 <script>
     // --- 1. DEFINICIÓN DE VARIABLES GLOBALES (Usar solo 'let', una vez) ---
-    const NOMBRES_DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let currentUser = null;
     let selectedTable = null;
-    let consultasData = [];
-    let diasDescansoSeleccionados = []; // <--- ¡NUEVA VARIABLE GLOBAL!
+    let consultasData = []; 
 
     // --- 2. CONFIGURACIÓN E INICIALIZACIÓN DE SUPABASE ---
     const SUPABASE_URL = 'https://bsxllefnehbwkuqbelec.supabase.co';
@@ -731,43 +692,51 @@ const TURNOS_ATTF = {
 };
 
 
-// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO (CORREGIDA Y UNIFICADA) ===
-// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO (CORREGIDA Y UNIFICADA) ===
+// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
+// === FUNCIÓN PARA VERIFICAR HORARIO PERMITIDO ===
 function verificarHorarioPermitido(rol) {
     const ahora = new Date();
     const horaActual = ahora.getHours();
     
-    // 1. Supervisor (Acceso libre)
     if (rol === 'Supervisor') {
-        return { permitido: true, mensaje: '' };
+        return { permitido: true };
     } 
     
-    // 2. Contratista (Día laboral y horario restringido)
     if (rol === 'Contratista') {
         if (!esDiaLaboral()) {
             return { permitido: false, mensaje: 'El rol Contratista solo tiene acceso de Lunes a Sábado.' };
         }
         if (horaActual >= 5 && horaActual < 20) {
-            return { permitido: true, mensaje: '' };
+            return { permitido: true };
+        }
+        return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
+    }
+
+    if (rol === 'Poda') {
+    const diasDescanso = await supabaseClient
+        .from('dias_descanso')
+        .select('dia')
+        .eq('usuario_id', currentUser.id);
+
+    const hoy = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
+    if (diasDescanso.data.includes(hoy)) {
+        return { permitido: false, mensaje: 'Hoy es un día de descanso. Acceso denegado.' };
+    }
+    return { permitido: true };
+}
+    
+    if (rol === 'Lectura' || rol === 'Consulta') {
+        if (horaActual >= 5 && horaActual < 20) {
+            return { permitido: true };
         }
         return { permitido: false, mensaje: 'Su acceso está limitado de 5:00 AM a 8:00 PM.' };
     }
     
-    // 3. Consulta, Poda y Lectura (Horario restringido 5 AM - 8 PM)
-    if (rol === 'Consulta' || rol === 'Poda' || rol === 'Lectura') {
-        if (horaActual >= 5 && horaActual < 20) {
-            return { permitido: true, mensaje: '' };
-        }
-        return { permitido: false, mensaje: 'Acceso solo permitido de 5:00 AM a 8:00 PM.' };
-    }
-    
-    // 4. ATTF (Debe verificar si está en un rango de gracia de algún turno)
     if (rol === 'ATTF') {
         return verificarTurnoATTFActivo(horaActual);
     }
     
-    // 5. Caso por defecto (Si el rol no está restringido)
-    return { permitido: true, mensaje: '' };
+    return { permitido: true };
 }
 
 // === FUNCIÓN AUXILIAR PARA VERIFICAR DÍA LABORAL ===
@@ -819,103 +788,24 @@ async function limpiarTurnosViejos() {
     }
 }
 
-
-
-// Función auxiliar para seleccionar/deseleccionar un día
-function toggleDiaSeleccionado(event, dia) {
-    const button = event.target;
-    
-    // 1. Lógica de SELECCIÓN (Si no está seleccionado y ya tenemos 2)
-    if (!button.classList.contains('selected') && diasDescansoSeleccionados.length >= 2) {
-        alert('Solo puede seleccionar un máximo de dos días de descanso.');
-        return; // Detiene la función, no permite seleccionar el tercer día.
-    }
-
-    // 2. Alternar la clase CSS para que se vea seleccionado
-    button.classList.toggle('selected');
-    
-    // 3. Actualizar el array global
-    if (button.classList.contains('selected')) {
-        // Añadir el día
-        diasDescansoSeleccionados.push(dia);
-    } else {
-        // Remover el día
-        diasDescansoSeleccionados = diasDescansoSeleccionados.filter(d => d !== dia);
-    }
-
-    // 4. Habilitar/Deshabilitar el botón de Confirmar
-    const btnConfirmar = document.getElementById('btnConfirmarDescanso');
-    // Habilitar solo si hay exactamente 2 días seleccionados
-    btnConfirmar.disabled = diasDescansoSeleccionados.length !== 2; 
-    
-    console.log('Días seleccionados:', diasDescansoSeleccionados);
-}
-
-
-
-// === FUNCIÓN AUXILIAR PARA ESCONDER TODAS LAS SECCIONES ===
-function esconderTodasLasSecciones() {
-    const sections = [
-        'loginSection', 
-        'seleccionDescansoSection', 
-        'tableSelectionSection', 
-        'searchSection', 
-        'adminSection',
-        'userInfo' // También ocultamos la info de usuario
-    ];
-    sections.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            // Usamos BOTH para máxima compatibilidad
-            element.classList.add('hidden'); 
-            element.style.display = 'none'; 
-        }
+function mostrarSeleccionDiasDescanso() {
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    let html = '<h3>Seleccione sus días de descanso:</h3><div>';
+    dias.forEach((dia, index) => {
+        html += `<button onclick="seleccionarDia(${index})">${dia}</button>`;
     });
-    document.getElementById('chartsModal').classList.add('hidden');
+    html += '</div>';
+    document.getElementById('searchResults').innerHTML = html;
 }
 
-// === FUNCIÓN PARA MOSTRAR SELECCIÓN DE DÍAS DE DESCANSO ===
-function mostrarSeleccionDescanso() { // ✅ Paréntesis obligatorios
-    const loginSection = document.getElementById('loginSection');
-    // Si ya tiene turno asignado (para ATTF), mostrarlo en el título
-    let tituloExtra = '';
-    if (currentUser.turnoAsignado) {
-        tituloExtra = `<p style="color: #666; margin-top: 10px;">Turno: ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}</p>`;
-    }
-    loginSection.innerHTML = `
-        <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
-        <h1 class="titulo-degradado">CLESA</h1>
-        <p class="subtitulo">Seleccione sus 2 Días de Descanso</p>
-        ${tituloExtra}
-        <div style="max-width: 400px; margin: 0 auto;">
-            <p style="margin-bottom: 20px; color: #666;">Seleccione exactamente 2 días en los que NO tendrá acceso al sistema:</p>
-            <div id="diasDescansoContainer" style="display: grid; gap: 10px;">
-                ${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(dia => `
-                    <div class="dia-option" onclick="toggleDia('${dia}')" style="
-                        padding: 15px;
-                        border: 2px solid #e2e8f0;
-                        border-radius: 12px;
-                        cursor: pointer;
-                        text-align: center;
-                        font-weight: 600;
-                        transition: all 0.3s ease;
-                        background: #f7fafc;
-                    " data-dia="${dia}">
-                        ${dia}
-                    </div>
-                `).join('')}
-            </div>
-            <div id="mensajeSeleccion" style="margin: 15px 0; color: #666; font-size: 14px; text-align: center;">
-                Seleccione 2 días
-            </div>
-            <button class="btn" id="btnConfirmarDias" onclick="confirmarDiasDescanso()" disabled style="opacity: 0.5;">
-                Confirmar Días de Descanso
-            </button>
-            <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">
-                Cancelar
-            </button>
-        </div>
-    `;
+function seleccionarDia(dia) {
+    supabaseClient
+        .from('dias_descanso')
+        .insert([{ usuario_id: currentUser.id, dia }])
+        .then(() => {
+            alert('Días de descanso guardados exitosamente.');
+            // Redirigir al menú principal o a la siguiente acción
+        });
 }
 
 async function login() {
@@ -987,101 +877,38 @@ async function login() {
 
         currentUser = { ...data, session_token: sessionToken };
 
-         currentUser = { ...data, session_token: sessionToken };
-
-        
-// === MANEJO DE ROL ATTF ===
-if (data.rol === 'ATTF') {
-    const fechaHoy = new Date().toISOString().split('T')[0];
-
-    // 1) Si YA tiene turno hoy → mostrar menú directamente
-    if (data.turno_fecha === fechaHoy && data.turno_actual) {
-        currentUser.turnoAsignado   = data.turno_actual;
-        currentUser.turnoNombre     = TURNOS_ATTF[data.turno_actual].nombre;
-        currentUser.turno_fecha     = data.turno_fecha;
-        currentUser.dias_descanso   = data.dias_descanso;
-        currentUser.descanso_fecha_fin = data.descanso_fecha_fin;
-
-        // 1.a) ¿Hoy es su día de descanso? → bloquear
-        if (data.dias_descanso && data.descanso_fecha_fin) {
-            const fechaFin = new Date(data.descanso_fecha_fin);
-            const hoy      = new Date(fechaHoy);
-            if (hoy <= fechaFin) {
-                const diasDescanso = data.dias_descanso.split(',');
-                const diaActualNombre = NOMBRES_DIAS[new Date().getDay()];
-                if (diasDescanso.includes(diaActualNombre)) {
-                    alert(`Hoy es ${diaActualNombre}, su día de descanso. No tiene acceso.`);
-                    await supabaseClient
-                        .from('usuarios')
-                        .update({ sessionactiva: false, sessiontoken: null })
-                        .eq('id', data.id);
-                    return;
-                }
-            }
-        }
-
-        // 1.b) Todo OK → entrar al menú
-        document.getElementById('currentUser').textContent =
-            `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('tableSelectionSection').style.display = 'block';
-        mostrarTablasSegunRol();
-        iniciarVerificacionSesion();
-        guardarDatosOffline();
-        setInterval(verificarCorteTurno, 5 * 60 * 1000);
-        return;
-    }
-
-    // 2) No tiene turno hoy → mostrar selección de turno
-    mostrarSeleccionTurno();
-    return;
-}
-
-
-        // === MANEJO DE ROL PODA ===
-        if (data.rol === 'Poda') {
+         if (data.rol === 'ATTF') {
             const fechaHoy = new Date().toISOString().split('T')[0];
             
-            // Verificar días de descanso
-            if (data.dias_descanso && data.descanso_fecha_fin) {
-                const fechaFin = new Date(data.descanso_fecha_fin);
-                const hoy = new Date(fechaHoy);
+            // Si tiene turno asignado del día actual, ir directo al menú
+            if (data.turno_fecha === fechaHoy && data.turno_actual) {
+                console.log('✅ Usuario tiene turno del día:', data.turno_actual);
+                currentUser.turnoAsignado = data.turno_actual;
+                currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
+                currentUser.turno_fecha = data.turno_fecha;
                 
-                if (hoy <= fechaFin) {
-                    const diasDescanso = data.dias_descanso.split(',');
-                    const diaActualNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
-                    
-                    if (diasDescanso.includes(diaActualNombre)) {
-                        alert(`Hoy es ${diaActualNombre}, uno de sus días de descanso. No tiene acceso al sistema.`);
-                        await supabaseClient
-                            .from('usuarios')
-                            .update({ sessionactiva: false, sessiontoken: null })
-                            .eq('id', data.id);
-                        return;
-                    }
-                    
-                    // Tiene días válidos, ir al menú
-                    currentUser.dias_descanso = data.dias_descanso;
-                    currentUser.descanso_fecha_fin = data.descanso_fecha_fin;
-                    
-                    document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
-                    document.getElementById('userInfo').classList.remove('hidden');
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('tableSelectionSection').style.display = 'block';
-                    
-                    mostrarTablasSegunRol();
-                    iniciarVerificacionSesion();
-                    guardarDatosOffline();
-                    return;
-                }
+                document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('tableSelectionSection').style.display = 'block';
+                
+                mostrarTablasSegunRol();
+                iniciarVerificacionSesion();
+                guardarDatosOffline();
+                setInterval(verificarCorteTurno, 5 * 60 * 1000);
+                return;
             }
             
-            // No tiene días o ya expiraron
-            console.log('👷 Usuario Poda - Sin días de descanso vigentes. Mostrando selección.');
-            mostrarSeleccionDescanso();
+            // Si no tiene turno o es de otro día, mostrar selección
+            console.log('👷 Usuario ATTF - Mostrando selección de turno');
+            mostrarSeleccionTurno();
             return;
         }
+
+	if (data.rol === 'Poda') {
+    mostrarSeleccionDiasDescanso();
+    return; // Prevenir que continúe al menú principal hasta que seleccione días
+}
 
         // Para otros roles: continuar normal
         document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
@@ -1517,31 +1344,23 @@ function generarKMLString(ubicaciones) {
 
     
 
-     // === FUNCIÓN PARA MOSTRAR LA SELECCIÓN DE TURNO ===
+     // === FUNCIÓN PARA MOSTRAR LA SELECCIÓN DE TURNO (CORREGIDA) ===
 function mostrarSeleccionTurno() {
     const ahora = new Date();
     const horaActual = ahora.getHours();
     const diaActual = ahora.toDateString();
     
-    // VALIDACIÓN: Si ya tiene turno asignado (persistencia desde el login)
+    // VALIDACIÓN: Si ya tiene turno asignado, ir directo al menú
     if (currentUser.turnoAsignado) {
         console.log('✅ Usuario ya tiene turno asignado:', currentUser.turnoAsignado);
-        
-        // Es crucial obtener el objeto del turno para programar el cierre
-        const turno = TURNOS_ATTF[currentUser.turnoAsignado];
-        
-        document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
+        document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${TURNOS_ATTF[currentUser.turnoAsignado].nombre}`;
         document.getElementById('userInfo').classList.remove('hidden');
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('tableSelectionSection').style.display = 'block';
         
         mostrarTablasSegunRol();
         iniciarVerificacionSesion();
-        
-        // 🚨 CRÍTICO: Reiniciar ambas funciones de control de tiempo 🚨
         setInterval(verificarCorteTurno, 5 * 60 * 1000);
-        programarCierreSesion(turno); // Activa el temporizador de cierre al reingresar
-        
         return;
     }
     
@@ -1597,7 +1416,6 @@ function mostrarSeleccionTurno() {
         return;
     }
     
-    // Renderizar la interfaz de selección de turno
     const loginSection = document.getElementById('loginSection');
     loginSection.innerHTML = `
         <img src="https://cdnimg.bnamericas.com/HFvkiBpeoLTFyPBTjytdbdohtBDrWQsnxgYaUwIlxAEFZVYKsYrwygPFBPYYlShO.png" alt="Logo CLESA" class="logo">
@@ -1617,9 +1435,7 @@ function mostrarSeleccionTurno() {
     `;
 }
 
-   
-
-
+// ... (Otras funciones auxiliares)
 
 // === FUNCIÓN AUXILIAR: GUARDAR TURNO EN SESIÓN ===
 function guardarTurnoEnSesion(turnoKey) {
@@ -1680,13 +1496,8 @@ async function seleccionarTurno(turnoKey) {
         horaInicio: ahora.toISOString()
     }));
     
-    // 🚨 PROGRAMAR EL CIERRE AUTOMÁTICO AL ASIGNAR EL TURNO 🚨
-    programarCierreSesion(turno);
-    
-    // Iniciar la verificación periódica de corte
     setInterval(verificarCorteTurno, 5 * 60 * 1000);
     
-    // Mostrar la interfaz principal
     document.getElementById('currentUser').textContent = `Bienvenido, ${currentUser.usuario} - ${turno.nombre}`;
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('loginSection').style.display = 'none';
@@ -1698,7 +1509,6 @@ async function seleccionarTurno(turnoKey) {
     iniciarVerificacionSesion();
     guardarDatosOffline();
 }
-
 
 function programarCierreSesion(turno) {
     const ahora = new Date();
@@ -1735,9 +1545,8 @@ function programarCierreSesion(turno) {
     }
     
     const tableOptions = document.querySelectorAll('.table-option');
-    const rolActual = currentUser.rol;
     
-    if (rolActual === 'Lectura') {
+    if (currentUser.rol === 'Lectura') {
         // Rol Lectura: Solo consultas_servicios
         tableOptions.forEach(option => {
             const onclick = option.getAttribute('onclick');
@@ -1747,8 +1556,8 @@ function programarCierreSesion(turno) {
                 option.style.display = 'none';
             }
         });
-    } else if (rolActual === 'ATTF' || rolActual === 'Poda') {
-        // Roles ATTF y Poda: Solo consultas_servicios y TX y Cortes
+    } else if (currentUser.rol === 'ATTF') {
+        // Rol ATTF: Solo consultas_servicios y TX y Cortes
         tableOptions.forEach(option => {
             const onclick = option.getAttribute('onclick');
             if (onclick && (onclick.includes('consultas_servicios') || onclick.includes('TX y Cortes'))) {
@@ -1757,14 +1566,23 @@ function programarCierreSesion(turno) {
                 option.style.display = 'none';
             }
         });
+    } else if (currentUser.rol === 'Contratista') {
+        // Rol Contratista: Todas las tablas
+        tableOptions.forEach(option => {
+            option.style.display = 'block';
+        });
+    } else if (currentUser.rol === 'Supervisor') {
+        // Rol Supervisor: Todas las tablas
+        tableOptions.forEach(option => {
+            option.style.display = 'block';
+        });
     } else {
-        // Roles Generales: Contratista, Supervisor, Consulta: Todas las tablas
+        // Rol Consulta y cualquier otro: Todas las tablas
         tableOptions.forEach(option => {
             option.style.display = 'block';
         });
     }
 }
-
 
 function iniciarVerificacionSesion() {
   setInterval(async () => {
@@ -1798,8 +1616,6 @@ function iniciarVerificacionSesion() {
     }
   }, 30000);
 }
-
-
 
 async function renovarSesion() {
   if (!currentUser) return;
@@ -3065,7 +2881,101 @@ function verificarDatosOffline() {
     return false;
 }
 
+// === FUNCIÓN DE LOGIN (CRÍTICA) ===
+async function login() {
+    console.log('🔐 Ejecutando login...');
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    
+    if (!username || !password) {
+        alert('Por favor ingrese usuario y contraseña');
+        return;
+    }
 
+    try {
+        console.log('🔍 Autenticando usuario:', username);
+        
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', username)
+            .eq('password', password)
+            .eq('activo', true)
+            .single();
+
+        if (error || !data) {
+            console.error('❌ Error de autenticación:', error);
+            alert('Usuario o contraseña incorrectos');
+            return;
+        }
+
+        console.log('✅ Usuario autenticado:', data.usuario);
+
+        // Verificar horario permitido
+        const verificacion = verificarHorarioPermitido(data.rol);
+        if (!verificacion.permitido) {
+            alert(verificacion.mensaje);
+            return;
+        }
+
+        // Crear sesión
+        const sessionToken = btoa(username + Date.now() + Math.random());
+        await supabaseClient
+            .from('usuarios')
+            .update({
+                sessionactiva: true,
+                sessiontoken: sessionToken,
+                ultimaconexion: new Date().toISOString()
+            })
+            .eq('id', data.id);
+
+        currentUser = { ...data, session_token: sessionToken };
+
+// Si es rol ATTF, verificar si ya tiene turno del día
+if (data.rol === 'ATTF') {
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    
+    // Si tiene turno asignado del día actual, ir directo al menú
+    if (data.turno_fecha === fechaHoy && data.turno_actual) {
+        console.log('✅ Usuario tiene turno del día:', data.turno_actual);
+        currentUser.turnoAsignado = data.turno_actual;
+        currentUser.turnoNombre = TURNOS_ATTF[data.turno_actual].nombre;
+        
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario} - ${currentUser.turnoNombre}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+        
+        mostrarTablasSegunRol();
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        setInterval(verificarCorteTurno, 5 * 60 * 1000);
+        return;
+    }
+    
+    // Si no tiene turno o es de otro día, mostrar selección
+    console.log('👷 Mostrando selección de turno');
+    mostrarSeleccionTurno();
+    return;
+}
+
+        // Para otros roles, continuar normal
+        console.log('👤 Acceso concedido - Rol:', data.rol);
+        document.getElementById('currentUser').textContent = `Bienvenido, ${data.usuario}`;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('tableSelectionSection').style.display = 'block';
+
+        iniciarVerificacionSesion();
+        guardarDatosOffline();
+        mostrarTablasSegunRol();
+
+    } catch (err) {
+        console.error('💥 Error crítico en login:', err);
+        alert('Error de conexión. Por favor intente nuevamente.');
+    }
+}
 
 // === FUNCIÓN PARA SELECCIONAR TABLA ===
 function seleccionarTabla(tableName) {
@@ -3108,5 +3018,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
 
